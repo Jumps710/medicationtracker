@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>お薬のんだ？ - 服薬管理アプリ v2.0</title>
+    <title>お薬のんだ？ - 服薬管理アプリ v2.1</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4CAF50">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -454,9 +454,9 @@
             <div class="medication-card">
                 <h3>ℹ️ アプリ情報</h3>
                 <div style="color: #666; font-size: 14px; line-height: 1.5;">
-                    <div>バージョン: 2.0</div>
+                    <div>バージョン: 2.1</div>
                     <div>データ保存場所: ローカルストレージ</div>
-                    <div>写真保持期間: 30日間</div>
+                    <div>写真保持期間: 3ヶ月間</div>
                     <div style="margin-top: 10px;">
                         <p><strong>お薬のんだ？</strong>は服薬管理をサポートするPWAアプリです。</p>
                         <p style="margin-top: 5px; font-size: 12px; color: #999;">
@@ -1276,18 +1276,23 @@
         }
         
         // 画像履歴の更新（古い画像を削除）
-        function updateImageHistory() {
-            // 30日以上古い画像を持つ履歴をクリーンアップ
-            const thirtyDaysAgo = new Date();
-            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        function cleanupOldPhotos() {
+            // 3ヶ月（90日）以上古い画像を持つ履歴をクリーンアップ
+            const threeMonthsAgo = new Date();
+            threeMonthsAgo.setDate(threeMonthsAgo.getDate() - 90);
             
+            let cleaned = false;
             history.forEach(item => {
-                if (item.photo && new Date(item.takenAt) < thirtyDaysAgo) {
+                if (item.photo && new Date(item.takenAt) < threeMonthsAgo) {
                     item.photo = null; // 古い画像を削除
+                    cleaned = true;
                 }
             });
             
-            localStorage.setItem('history', JSON.stringify(history));
+            if (cleaned) {
+                localStorage.setItem('history', JSON.stringify(history));
+                console.log('古い写真をクリーンアップしました');
+            }
         }
         
         // 写真モーダル表示
@@ -1854,6 +1859,14 @@
             // 在庫切れ通知も定期的にチェック
             checkLowStockNotifications();
         }, 60000);
+        
+        // 定期的に古い写真をクリーンアップ（1日1回）
+        setInterval(() => {
+            cleanupOldPhotos();
+        }, 24 * 60 * 60 * 1000); // 24時間ごと
+        
+        // アプリ起動時にも実行
+        cleanupOldPhotos();
     </script>
 </body>
 </html>
