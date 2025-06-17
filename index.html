@@ -19,17 +19,17 @@
         
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background-color: #f5f5f5;
-            color: #333;
+            background-color: #f0f4f8;
+            color: #2d3748;
             padding-bottom: 70px;
         }
         
         .header {
-            background-color: #4CAF50;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 15px;
+            padding: 20px;
             text-align: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
         
         .container {
@@ -60,7 +60,7 @@
         }
         
         .tab.active {
-            color: #4CAF50;
+            color: #667eea;
             font-weight: bold;
         }
         
@@ -74,10 +74,11 @@
         
         .medication-card {
             background: white;
-            border-radius: 10px;
-            padding: 15px;
+            border-radius: 12px;
+            padding: 20px;
             margin-bottom: 15px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            border: 1px solid #e2e8f0;
         }
         
         .medication-name {
@@ -93,18 +94,21 @@
         }
         
         .take-button {
-            background-color: #4CAF50;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
+            padding: 12px 24px;
+            border-radius: 8px;
             cursor: pointer;
             font-size: 16px;
             width: 100%;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
         }
         
         .take-button:hover {
-            background-color: #45a049;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(102, 126, 234, 0.4);
         }
         
         .take-button.taken {
@@ -119,7 +123,7 @@
             right: 20px;
             width: 56px;
             height: 56px;
-            background-color: #4CAF50;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
             border-radius: 50%;
@@ -342,39 +346,50 @@
         }
         
         .camera-controls button {
-            padding: 10px 20px;
+            padding: 12px 24px;
             border: none;
-            border-radius: 5px;
+            border-radius: 8px;
             cursor: pointer;
             font-size: 16px;
+            transition: all 0.3s ease;
         }
         
         .capture-button {
-            background-color: #4CAF50;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
+            box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+        }
+        
+        .capture-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(102, 126, 234, 0.4);
         }
         
         .retake-button {
-            background-color: #ff9800;
-            color: white;
+            background-color: #e2e8f0;
+            color: #4a5568;
+        }
+        
+        .retake-button:hover {
+            background-color: #cbd5e0;
         }
         
         .analysis-result {
-            background: #e3f2fd;
-            border: 1px solid #2196F3;
-            border-radius: 5px;
-            padding: 15px;
-            margin: 15px 0;
+            background: #edf2f7;
+            border: 1px solid #cbd5e0;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 16px 0;
             text-align: center;
         }
         
         .success-message {
-            background-color: #4CAF50;
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
             color: white;
         }
         
         .warning-message {
-            background-color: #ff9800;
+            background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
             color: white;
         }
         
@@ -387,17 +402,17 @@
         }
         
         .form-message.success {
-            background-color: #4CAF50;
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
             color: white;
         }
         
         .form-message.error {
-            background-color: #f44336;
+            background: linear-gradient(135deg, #fc8181 0%, #f56565 100%);
             color: white;
         }
         
         .form-message.info {
-            background-color: #2196F3;
+            background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
             color: white;
         }
     </style>
@@ -669,9 +684,27 @@
                 <div id="analysis-result" class="analysis-result" style="display: none;"></div>
             </div>
             
-            <div class="form-buttons">
-                <button id="confirm-btn" class="save-button" onclick="confirmMedication()" style="display: none;">服用を確認</button>
-                <button id="skip-photo-btn" class="save-button" onclick="confirmMedicationWithoutPhoto()" style="background: #ff9800;">写真なしで記録</button>
+            <div id="medication-confirm-section" style="display: none;">
+                <div class="medication-confirm-info">
+                    <h4 id="confirm-med-name" style="margin-bottom: 10px;"></h4>
+                    <div class="form-group">
+                        <label for="confirm-dosage">服用数量</label>
+                        <input type="number" id="confirm-dosage" min="1" value="1" style="width: 100px;">
+                        <span id="confirm-dosage-unit" style="margin-left: 5px;"></span>
+                    </div>
+                    <div style="color: #666; margin-bottom: 10px;">
+                        <span>現在の在庫: </span><span id="confirm-current-stock"></span>
+                        <br>
+                        <span>服用後の在庫: </span><span id="confirm-remaining-stock" style="font-weight: bold;"></span>
+                    </div>
+                </div>
+                <div class="form-buttons">
+                    <button class="save-button" onclick="confirmMedicationWithPhoto()">登録</button>
+                    <button class="cancel-button" onclick="resetCameraModal()">キャンセル</button>
+                </div>
+            </div>
+            
+            <div class="form-buttons" id="camera-initial-buttons">
                 <button class="cancel-button" onclick="hideCameraModal()">キャンセル</button>
             </div>
         </div>
@@ -1279,20 +1312,28 @@
             currentMealTime = mealTime;
             
             const modal = document.getElementById('camera-modal');
+            resetCameraModal();
+            modal.style.display = 'block';
+        }
+        
+        // カメラモーダルをリセット
+        function resetCameraModal() {
             const capturedImage = document.getElementById('captured-image');
             const analysisResult = document.getElementById('analysis-result');
-            const confirmBtn = document.getElementById('confirm-btn');
             const captureBtn = document.getElementById('capture-btn');
             const retakeBtn = document.getElementById('retake-btn');
+            const confirmSection = document.getElementById('medication-confirm-section');
+            const initialButtons = document.getElementById('camera-initial-buttons');
+            const fileInput = document.getElementById('camera-input');
             
-            // リセット
+            // 表示をリセット
             capturedImage.style.display = 'none';
             analysisResult.style.display = 'none';
-            confirmBtn.style.display = 'none';
             captureBtn.style.display = 'block';
             retakeBtn.style.display = 'none';
-            
-            modal.style.display = 'block';
+            confirmSection.style.display = 'none';
+            initialButtons.style.display = 'block';
+            fileInput.value = '';
         }
         
         // カメラモーダル非表示
@@ -1339,45 +1380,67 @@
         
         // 撮り直し
         function retakePhoto() {
-            const capturedImage = document.getElementById('captured-image');
-            const captureBtn = document.getElementById('capture-btn');
-            const retakeBtn = document.getElementById('retake-btn');
-            const analysisResult = document.getElementById('analysis-result');
-            const confirmBtn = document.getElementById('confirm-btn');
-            const fileInput = document.getElementById('camera-input');
-            
-            // 表示をリセット
-            capturedImage.style.display = 'none';
-            analysisResult.style.display = 'none';
-            confirmBtn.style.display = 'none';
-            fileInput.value = ''; // ファイル入力をリセット
-            
-            // ボタンの表示を切り替え
-            captureBtn.style.display = 'block';
-            retakeBtn.style.display = 'none';
+            resetCameraModal();
         }
         
         // 画像圧縮と保存
         async function analyzeImage(imageDataUrl) {
-            const analysisResult = document.getElementById('analysis-result');
-            const confirmBtn = document.getElementById('confirm-btn');
-            
             // 画像圧縮
             const compressedImage = await compressImage(imageDataUrl);
             
             // 圧縮した画像を一時保存
             sessionStorage.setItem('tempMedicationImage', compressedImage);
             
-            // シンプルな確認メッセージ表示
-            analysisResult.innerHTML = `
-                <div class="success-message">
-                    ✅ 写真が記録されました<br>
-                    <small>服用を確認してください</small>
-                </div>
-            `;
-            analysisResult.className = 'analysis-result success-message';
-            analysisResult.style.display = 'block';
-            confirmBtn.style.display = 'block';
+            // 服用確認セクションを表示
+            showMedicationConfirmSection();
+        }
+        
+        // 服用確認セクションを表示
+        function showMedicationConfirmSection() {
+            const med = medications.find(m => m.id === currentMedId);
+            if (!med) return;
+            
+            // 薬剤情報を表示
+            document.getElementById('confirm-med-name').textContent = med.name;
+            
+            // 用量を解析して数値と単位に分ける
+            const dosageMatch = med.dosage.match(/(\d+)(.+)/);
+            const dosageNumber = dosageMatch ? dosageMatch[1] : '1';
+            const dosageUnit = dosageMatch ? dosageMatch[2] : '錠';
+            
+            document.getElementById('confirm-dosage').value = dosageNumber;
+            document.getElementById('confirm-dosage-unit').textContent = dosageUnit;
+            document.getElementById('confirm-current-stock').textContent = med.stock + dosageUnit;
+            
+            // 服用数量変更時の在庫計算
+            updateRemainingStock();
+            document.getElementById('confirm-dosage').addEventListener('input', updateRemainingStock);
+            
+            // UIを切り替え
+            document.getElementById('medication-confirm-section').style.display = 'block';
+            document.getElementById('camera-initial-buttons').style.display = 'none';
+        }
+        
+        // 残り在庫を更新
+        function updateRemainingStock() {
+            const med = medications.find(m => m.id === currentMedId);
+            if (!med) return;
+            
+            const dosageInput = document.getElementById('confirm-dosage');
+            const takingAmount = parseInt(dosageInput.value) || 1;
+            const remaining = med.stock - takingAmount;
+            
+            const remainingElement = document.getElementById('confirm-remaining-stock');
+            remainingElement.textContent = remaining + document.getElementById('confirm-dosage-unit').textContent;
+            
+            // 在庫不足の場合は警告表示
+            if (remaining < 0) {
+                remainingElement.style.color = '#f56565';
+            } else if (remaining <= med.alertThreshold) {
+                remainingElement.style.color = '#ed8936';
+            } else {
+                remainingElement.style.color = '#38a169';
+            }
         }
         
         // 画像圧縮関数
@@ -1500,25 +1563,36 @@
             }
         }
         
-        // 服用確認（写真なし）
-        function confirmMedicationWithoutPhoto() {
+        // 服用確認（写真付き）
+        function confirmMedicationWithPhoto() {
             if (currentMedId && currentMealTime) {
                 const med = medications.find(m => m.id === currentMedId);
                 if (!med) return;
                 
+                const takingAmount = parseInt(document.getElementById('confirm-dosage').value) || 1;
+                
+                // 在庫チェック
+                if (med.stock < takingAmount) {
+                    alert('在庫が不足しています。');
+                    return;
+                }
+                
                 // 在庫を減らす
-                med.stock -= 1;
+                med.stock -= takingAmount;
                 localStorage.setItem('medications', JSON.stringify(medications));
                 
-                // 履歴に追加（写真なし）
+                // 一時保存された写真を取得
+                const tempImage = sessionStorage.getItem('tempMedicationImage');
+                
+                // 履歴に追加　
                 const historyItem = {
                     medicationId: currentMedId,
                     medicationName: med.name,
-                    dosage: med.dosage,
+                    dosage: takingAmount + document.getElementById('confirm-dosage-unit').textContent,
                     takenAt: new Date().toISOString(),
                     mealTime: currentMealTime,
-                    photoVerified: false,
-                    photo: null
+                    photoVerified: true,
+                    photo: tempImage
                 };
                 history.push(historyItem);
                 localStorage.setItem('history', JSON.stringify(history));
@@ -1527,7 +1601,7 @@
                 sessionStorage.removeItem('tempMedicationImage');
                 
                 // 画像履歴も管理
-                updateImageHistory();
+                cleanupOldPhotos();
                 
                 // UIを更新
                 updateTodayMedications();
@@ -1537,7 +1611,7 @@
                 hideCameraModal();
                 
                 // 成功メッセージ
-                alert('✅ 服用が記録されました！');
+                alert('📸 服用が記録されました！');
             }
         }
         
@@ -1551,17 +1625,17 @@
             if (viewType === 'list') {
                 listView.style.display = 'block';
                 galleryView.style.display = 'none';
-                listBtn.style.background = '#4CAF50';
+                listBtn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
                 listBtn.style.color = 'white';
-                galleryBtn.style.background = '#ddd';
-                galleryBtn.style.color = '#666';
+                galleryBtn.style.background = '#e2e8f0';
+                galleryBtn.style.color = '#4a5568';
                 updateHistoryList();
             } else {
                 listView.style.display = 'none';
                 galleryView.style.display = 'block';
-                listBtn.style.background = '#ddd';
-                listBtn.style.color = '#666';
-                galleryBtn.style.background = '#4CAF50';
+                listBtn.style.background = '#e2e8f0';
+                listBtn.style.color = '#4a5568';
+                galleryBtn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
                 galleryBtn.style.color = 'white';
                 updateHistoryGallery();
             }
