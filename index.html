@@ -665,33 +665,11 @@
             });
         }
         
-        // 薬を服用
+        // 薬を服用（写真必須）
+        // この関数は使用されず、すべての服用記録は showCameraModal を経由して写真付きで行われます
         function takeMedication(medId, mealTime) {
-            const med = medications.find(m => m.id === medId);
-            if (!med) return;
-            
-            // 在庫を減らす
-            med.stock -= 1;
-            localStorage.setItem('medications', JSON.stringify(medications));
-            
-            // 履歴に追加
-            const historyItem = {
-                medicationId: medId,
-                medicationName: med.name,
-                dosage: med.dosage,
-                takenAt: new Date().toISOString(),
-                mealTime: mealTime,
-                photo: null // 写真なし
-            };
-            history.push(historyItem);
-            localStorage.setItem('history', JSON.stringify(history));
-            
-            // 画像履歴も管理
-            updateImageHistory();
-            
-            // UIを更新
-            updateTodayMedications();
-            checkStockWarnings();
+            // 写真撮影が必須のため、直接カメラモーダルを起動
+            showCameraModal(medId, mealTime);
         }
         
         // 今日服用済みかチェック
