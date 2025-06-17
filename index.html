@@ -150,6 +150,8 @@
             border-radius: 10px;
             width: 90%;
             max-width: 400px;
+            max-height: 80vh;
+            overflow-y: auto;
         }
         
         .form-group {
@@ -305,6 +307,8 @@
         
         .camera-modal .modal-content {
             max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
         }
         
         .camera-container {
@@ -409,12 +413,12 @@
     <!-- タブバー -->
     <div class="tab-bar">
         <button class="tab active" onclick="showPage('home')">
-            <div>🏠</div>
-            <div>ホーム</div>
+            <div>💊</div>
+            <div>服用</div>
         </button>
         <button class="tab" onclick="showPage('medications')">
-            <div>💊</div>
-            <div>薬管理</div>
+            <div>🗃️</div>
+            <div>薬箱</div>
         </button>
         <button class="tab" onclick="showPage('history')">
             <div>📊</div>
@@ -476,6 +480,18 @@
                     <label for="med-stock">現在の在庫数</label>
                     <input type="number" id="med-stock" required>
                 </div>
+                <div class="form-group">
+                    <label for="med-alert-threshold">在庫警告しきい値</label>
+                    <select id="med-alert-threshold" required>
+                        <option value="3">残り3個</option>
+                        <option value="5">残り5個</option>
+                        <option value="7" selected>残り7個</option>
+                        <option value="10">残り10個</option>
+                        <option value="14">残り14個</option>
+                        <option value="21">残り21個</option>
+                        <option value="30">残り30個</option>
+                    </select>
+                </div>
                 <div class="form-buttons">
                     <button type="submit" class="save-button">保存</button>
                     <button type="button" class="cancel-button" onclick="hideAddModal()">キャンセル</button>
@@ -489,12 +505,12 @@
         <div class="modal-content">
             <h3>服用写真を撮影してください</h3>
             <div class="camera-container">
-                <video id="camera-video" class="camera-video" autoplay></video>
-                <canvas id="camera-canvas" class="camera-canvas"></canvas>
+                <input type="file" id="camera-input" accept="image/*" capture="environment" style="display: none;" onchange="handlePhotoCapture(event)">
+                <canvas id="camera-canvas" class="camera-canvas" style="display: none;"></canvas>
                 <img id="captured-image" class="captured-image" style="display: none;">
                 
                 <div class="camera-controls">
-                    <button id="capture-btn" class="capture-button" onclick="capturePhoto()">📷 撮影</button>
+                    <button id="capture-btn" class="capture-button" onclick="openCameraApp()">📷 撮影</button>
                     <button id="retake-btn" class="retake-button" onclick="retakePhoto()" style="display: none;">🔄 撮り直し</button>
                 </div>
                 
