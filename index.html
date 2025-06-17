@@ -554,34 +554,55 @@
         }
         
         function hideAddModal() {
-            document.getElementById('add-modal').style.display = 'none';
+            const modal = document.getElementById('add-modal');
+            modal.style.display = 'none';
+            modal.dataset.editId = '';
             document.getElementById('add-medication-form').reset();
+            document.querySelector('#add-modal h3').textContent = '新しい薬を追加';
         }
         
-        // 薬の追加
+        // 薬の追加/編集
         document.getElementById('add-medication-form').addEventListener('submit', function(e) {
             e.preventDefault();
             
             const dosageNumber = document.getElementById('med-dosage-number').value;
             const dosageUnit = document.getElementById('med-dosage-unit').value;
+            const editId = document.getElementById('add-modal').dataset.editId;
             
-            const medication = {
-                id: Date.now(),
+            const medicationData = {
                 name: document.getElementById('med-name').value,
                 dosage: dosageNumber + dosageUnit,
                 frequency: document.getElementById('med-frequency').value,
                 stock: parseInt(document.getElementById('med-stock').value),
-                createdAt: new Date().toISOString()
+                alertThreshold: parseInt(document.getElementById('med-alert-threshold').value)
             };
             
-            medications.push(medication);
+            if (editId) {
+                // 編集モード
+                const medIndex = medications.findIndex(m => m.id === parseInt(editId));
+                if (medIndex !== -1) {
+                    medications[medIndex] = {
+                        ...medications[medIndex],
+                        ...medicationData
+                    };
+                }
+            } else {
+                // 新規追加モード
+                const medication = {
+                    id: Date.now(),
+                    ...medicationData,
+                    createdAt: new Date().toISOString()
+                };
+                medications.push(medication);
+                
+                // 通知の設定
+                scheduleNotifications(medication);
+            }
+            
             localStorage.setItem('medications', JSON.stringify(medications));
             
             hideAddModal();
             showPage('medications');
-            
-            // 通知の設定（後で実装）
-            scheduleNotifications(medication);
         });
         
         // 今日の服薬リストを更新
@@ -747,12 +768,12 @@
             const container = document.getElementById('stock-warnings');
             container.innerHTML = '';
             
-            const warnings = medications.filter(med => med.stock < 7);
+            const warnings = medications.filter(med => med.stock <= (med.alertThreshold || 7));
             if (warnings.length > 0) {
                 warnings.forEach(med => {
                     const warning = document.createElement('div');
                     warning.className = 'stock-warning';
-                    warning.textContent = `⚠️ ${med.name}の在庫が残り${med.stock}個です。通院をお忘れなく！`;
+                    warning.textContent = `⚠️ ${med.name}の在庫が残り${med.stock}個です。追加購入してください！`;
                     container.appendChild(warning);
                 });
             }
@@ -774,7 +795,11 @@
                 card.innerHTML = `
                     <div class="medication-name">${med.name}</div>
                     <div class="medication-info">${med.dosage} - ${med.frequency}</div>
-                    <div class="medication-info">在庫: ${med.stock}個</div>
+                    <div class="medication-info">在庫: ${med.stock}個 (警告: ${med.alertThreshold || 7}個)</div>
+                    <div style="margin-top: 10px;">
+                        <button onclick="editMedication(${med.id})" style="padding: 5px 10px; margin-right: 5px; background: #2196F3; color: white; border: none; border-radius: 3px; cursor: pointer;">✏️ 編集</button>
+                        <button onclick="deleteMedication(${med.id})" style="padding: 5px 10px; background: #f44336; color: white; border: none; border-radius: 3px; cursor: pointer;">🗑️ 削除</button>
+                    </div>
                 `;
                 container.appendChild(card);
             });
@@ -947,15 +972,9 @@
         // 在庫切れ通知をチェック
         function checkLowStockNotifications() {
             medications.forEach(med => {
-                if (med.stock <= 7 && med.stock > 0) {
-                    // 1日1回だけ通知（最後の通知から24時間経過していたら）
-                    const lastNotified = localStorage.getItem(`lastStockNotify-${med.id}`);
-                    const now = Date.now();
-                    
-                    if (!lastNotified || (now - parseInt(lastNotified)) > 24 * 60 * 60 * 1000) {
-                        showLowStockNotification(med);
-                        localStorage.setItem(`lastStockNotify-${med.id}`, now.toString());
-                    }
+                const threshold = med.alertThreshold || 7;
+                if (med.stock <= threshold && med.stock > 0) {
+                    showLowStockNotification(med);
                 }
             });
         }
@@ -964,7 +983,7 @@
         function showLowStockNotification(medication) {
             if ('Notification' in window && Notification.permission === 'granted') {
                 const notification = new Notification(`⚠️ 薬の在庫が少なくなっています`, {
-                    body: `${medication.name}の在庫が残り${medication.stock}個です。通院の準備をしてください。`,
+                    body: `${medication.name}の在庫が残り${medication.stock}個です。追加購入してください。`,
                     icon: '⚠️',
                     badge: '⚠️',
                     tag: `stock-${medication.id}`,
@@ -1064,12 +1083,11 @@
         }
         
         // カメラモーダル表示
-        async function showCameraModal(medId, mealTime) {
+        function showCameraModal(medId, mealTime) {
             currentMedId = medId;
             currentMealTime = mealTime;
             
             const modal = document.getElementById('camera-modal');
-            const video = document.getElementById('camera-video');
             const capturedImage = document.getElementById('captured-image');
             const analysisResult = document.getElementById('analysis-result');
             const confirmBtn = document.getElementById('confirm-btn');
@@ -1078,22 +1096,12 @@
             
             // リセット
             capturedImage.style.display = 'none';
-            video.style.display = 'block';
             analysisResult.style.display = 'none';
             confirmBtn.style.display = 'none';
             captureBtn.style.display = 'block';
             retakeBtn.style.display = 'none';
             
-            try {
-                cameraStream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: 'environment' } // 背面カメラを優先
-                });
-                video.srcObject = cameraStream;
-                modal.style.display = 'block';
-            } catch (err) {
-                alert('カメラにアクセスできません。ブラウザの設定でカメラの使用を許可してください。');
-                console.error('カメラエラー:', err);
-            }
+            modal.style.display = 'block';
         }
         
         // カメラモーダル非表示
@@ -1101,62 +1109,57 @@
             const modal = document.getElementById('camera-modal');
             modal.style.display = 'none';
             
-            // カメラストリームを停止
-            if (cameraStream) {
-                cameraStream.getTracks().forEach(track => track.stop());
-                cameraStream = null;
-            }
-            
             currentMedId = null;
             currentMealTime = null;
         }
         
-        // 写真撮影
-        function capturePhoto() {
-            const video = document.getElementById('camera-video');
-            const canvas = document.getElementById('camera-canvas');
-            const capturedImage = document.getElementById('captured-image');
-            const captureBtn = document.getElementById('capture-btn');
-            const retakeBtn = document.getElementById('retake-btn');
+        // OSカメラアプリを起動
+        function openCameraApp() {
+            const fileInput = document.getElementById('camera-input');
+            fileInput.click();
+        }
+        
+        // 写真キャプチャ処理
+        function handlePhotoCapture(event) {
+            const file = event.target.files[0];
+            if (!file) return;
             
-            // キャンバスのサイズを動画のサイズに設定
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            
-            // 動画フレームをキャンバスに描画
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(video, 0, 0);
-            
-            // キャンバスから画像データを取得
-            const imageDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-            
-            // 撮影した画像を表示
-            capturedImage.src = imageDataUrl;
-            capturedImage.style.display = 'block';
-            video.style.display = 'none';
-            
-            // ボタンの表示を切り替え
-            captureBtn.style.display = 'none';
-            retakeBtn.style.display = 'block';
-            
-            // 画像解析を実行
-            analyzeImage(imageDataUrl);
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const imageDataUrl = e.target.result;
+                
+                // 撮影した画像を表示
+                const capturedImage = document.getElementById('captured-image');
+                const captureBtn = document.getElementById('capture-btn');
+                const retakeBtn = document.getElementById('retake-btn');
+                
+                capturedImage.src = imageDataUrl;
+                capturedImage.style.display = 'block';
+                
+                // ボタンの表示を切り替え
+                captureBtn.style.display = 'none';
+                retakeBtn.style.display = 'block';
+                
+                // 画像解析を実行
+                analyzeImage(imageDataUrl);
+            };
+            reader.readAsDataURL(file);
         }
         
         // 撮り直し
         function retakePhoto() {
-            const video = document.getElementById('camera-video');
             const capturedImage = document.getElementById('captured-image');
             const captureBtn = document.getElementById('capture-btn');
             const retakeBtn = document.getElementById('retake-btn');
             const analysisResult = document.getElementById('analysis-result');
             const confirmBtn = document.getElementById('confirm-btn');
+            const fileInput = document.getElementById('camera-input');
             
             // 表示をリセット
             capturedImage.style.display = 'none';
-            video.style.display = 'block';
             analysisResult.style.display = 'none';
             confirmBtn.style.display = 'none';
+            fileInput.value = ''; // ファイル入力をリセット
             
             // ボタンの表示を切り替え
             captureBtn.style.display = 'block';
@@ -1399,6 +1402,49 @@
                         </div>
                     `;
                 }).join('') + '</div>';
+        }
+        
+        // 薬の編集
+        function editMedication(medId) {
+            const med = medications.find(m => m.id === medId);
+            if (!med) return;
+            
+            // 現在の値をフォームに設定
+            document.getElementById('med-name').value = med.name;
+            
+            // 用量を数字と単位に分割
+            const dosageMatch = med.dosage.match(/(\d+)(.+)/);
+            if (dosageMatch) {
+                document.getElementById('med-dosage-number').value = dosageMatch[1];
+                document.getElementById('med-dosage-unit').value = dosageMatch[2];
+            }
+            
+            document.getElementById('med-frequency').value = med.frequency;
+            document.getElementById('med-stock').value = med.stock;
+            document.getElementById('med-alert-threshold').value = med.alertThreshold || 7;
+            
+            // 編集モードでモーダルを表示
+            document.getElementById('add-modal').style.display = 'block';
+            document.getElementById('add-modal').dataset.editId = medId;
+            document.querySelector('#add-modal h3').textContent = '薬の情報を編集';
+        }
+        
+        // 薬の削除
+        function deleteMedication(medId) {
+            const med = medications.find(m => m.id === medId);
+            if (!med) return;
+            
+            if (confirm(`「${med.name}」を削除しますか？\\nこの操作は元に戻せません。`)) {
+                medications = medications.filter(m => m.id !== medId);
+                localStorage.setItem('medications', JSON.stringify(medications));
+                
+                // UIを更新
+                updateMedicationsList();
+                updateTodayMedications();
+                checkStockWarnings();
+                
+                alert('✅ 薬が削除されました。');
+            }
         }
         
         // 定期的に画面を更新（1分ごと）
