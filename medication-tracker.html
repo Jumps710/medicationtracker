@@ -499,6 +499,11 @@
                     <input type="number" id="med-stock" required>
                 </div>
                 <div class="form-group">
+                    <label for="med-alert-threshold">在庫アラート闾値</label>
+                    <input type="number" id="med-alert-threshold" placeholder="例: 7" value="7" min="1">
+                    <small style="color: #666; display: block; margin-top: 5px;">この数以下になったら警告を表示します</small>
+                </div>
+                <div class="form-group">
                     <label for="med-purpose">用途</label>
                     <select id="med-purpose" onchange="toggleCustomPurpose()">
                         <option value="">選択してください</option>
@@ -552,6 +557,11 @@
                 <div class="form-group">
                     <label for="edit-med-stock">現在の在庫数</label>
                     <input type="number" id="edit-med-stock" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-med-alert-threshold">在庫アラート闾値</label>
+                    <input type="number" id="edit-med-alert-threshold" placeholder="例: 7" min="1">
+                    <small style="color: #666; display: block; margin-top: 5px;">この数以下になったら警告を表示します</small>
                 </div>
                 <div class="form-group">
                     <label for="edit-med-purpose">用途</label>
@@ -701,6 +711,7 @@
                 dosage: document.getElementById('med-dosage').value,
                 frequency: document.getElementById('med-frequency').value,
                 stock: parseInt(document.getElementById('med-stock').value),
+                alertThreshold: parseInt(document.getElementById('med-alert-threshold').value) || 7,
                 purpose: getPurposeValue(),
                 createdAt: new Date().toISOString()
             };
@@ -709,10 +720,15 @@
             localStorage.setItem('medications', JSON.stringify(medications));
             
             hideAddModal();
-            showPage('medications');
+            
+            // 薬箱画面を更新
+            updateMedicationsList();
             
             // 通知の設定（後で実装）
             scheduleNotifications(medication);
+            
+            // 薬箱画面を表示
+            showPage('medications');
         });
         
         // 今日の服薬リストを更新
@@ -795,12 +811,10 @@
                     <div class="missed-dose-info">
                         ${missed.timing} (${missed.missedTime}) - ${missed.medication.dosage}
                     </div>
-                    <button class="take-button" onclick="takeMedication(${missed.medication.id}, '${missed.timing}')"
-                            ${isTakenToday(missed.medication.id, missed.timing) ? 'disabled' : ''}>
-                        ${isTakenToday(missed.medication.id, missed.timing) ? '✓ 服用済み' : '今服用する'}
-                    </button>
                     ${!isTakenToday(missed.medication.id, missed.timing) ? 
-                        `<button class="camera-button" onclick="showCameraModal(${missed.medication.id}, '${missed.timing}')">📸 写真で確認</button>` : ''}
+                        `<button class="camera-button" onclick="showCameraModal(${missed.medication.id}, '${missed.timing}')" style="width: 100%; font-size: 16px; padding: 10px;">📸 写真で服用確認</button>` : 
+                        `<button class="take-button taken" disabled>✓ 服用済み</button>`
+                    }
                 `;
                 container.appendChild(card);
             });
@@ -825,20 +839,20 @@
                     <div class="medication-name">${med.name}</div>
                     <div class="medication-info">${med.dosage} - ${med.frequency}</div>
                     <div class="medication-info">在庫: ${med.stock}個</div>
-                    <button class="take-button ${taken ? 'taken' : ''}" 
-                            onclick="takeMedication(${med.id}, '${mealTime}')"
-                            ${taken ? 'disabled' : ''}>
-                        ${taken ? '✓ 服用済み' : '服用する'}
-                    </button>
-                    ${!taken ? `<button class="camera-button" onclick="showCameraModal(${med.id}, '${mealTime}')">📸 写真で確認</button>` : ''}
+                    ${!taken ? `<button class="camera-button" onclick="showCameraModal(${med.id}, '${mealTime}')" style="width: 100%; font-size: 16px; padding: 10px;">📸 写真で服用確認</button>` : `<button class="take-button taken" disabled>✓ 服用済み</button>`}
                     ${taken ? `<button class="cancel-button" onclick="undoMedication(${med.id}, '${mealTime}')" style="margin-top: 5px; width: 100%; padding: 8px; font-size: 14px;">🔄 取り消し</button>` : ''}
                 `;
                 container.appendChild(card);
             });
         }
         
-        // 薬を服用
-        function takeMedication(medId, mealTime) {
+        // 薬を服用（写真確認からのみ呼び出される）
+        function takeMedication(medId, mealTime, photoVerified = false) {
+            if (!photoVerified) {
+                alert('⚠️ 服用確認には写真が必要です');
+                return;
+            }
+            
             const med = medications.find(m => m.id === medId);
             if (!med) return;
             
@@ -852,7 +866,8 @@
                 medicationName: med.name,
                 dosage: med.dosage,
                 takenAt: new Date().toISOString(),
-                mealTime: mealTime
+                mealTime: mealTime,
+                photoVerified: true
             };
             history.push(historyItem);
             localStorage.setItem('history', JSON.stringify(history));
@@ -952,7 +967,11 @@
             const container = document.getElementById('stock-warnings');
             container.innerHTML = '';
             
-            const warnings = medications.filter(med => med.stock < 7);
+            const warnings = medications.filter(med => {
+                const threshold = med.alertThreshold || 7;
+                return med.stock <= threshold;
+            });
+            
             if (warnings.length > 0) {
                 warnings.forEach(med => {
                     const warning = document.createElement('div');
@@ -1145,7 +1164,8 @@
         // 在庫切れ通知をチェック
         function checkLowStockNotifications() {
             medications.forEach(med => {
-                if (med.stock <= 7 && med.stock > 0) {
+                const threshold = med.alertThreshold || 7;
+                if (med.stock <= threshold && med.stock > 0) {
                     // 1日1回だけ通知（最後の通知から24時間経過していたら）
                     const lastNotified = localStorage.getItem(`lastStockNotify-${med.id}`);
                     const now = Date.now();
@@ -1927,6 +1947,7 @@
             document.getElementById('edit-med-dosage').value = med.dosage;
             document.getElementById('edit-med-frequency').value = med.frequency;
             document.getElementById('edit-med-stock').value = med.stock;
+            document.getElementById('edit-med-alert-threshold').value = med.alertThreshold || 7;
             
             // 用途の設定
             const purposeSelect = document.getElementById('edit-med-purpose');
@@ -1992,6 +2013,7 @@
                     dosage: document.getElementById('edit-med-dosage').value,
                     frequency: document.getElementById('edit-med-frequency').value,
                     stock: parseInt(document.getElementById('edit-med-stock').value),
+                    alertThreshold: parseInt(document.getElementById('edit-med-alert-threshold').value) || 7,
                     purpose: getEditPurposeValue()
                 };
                 
