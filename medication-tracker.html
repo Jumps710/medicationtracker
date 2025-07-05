@@ -364,6 +364,35 @@
             font-size: 14px;
             margin-bottom: 10px;
         }
+        
+        .edit-modal .modal-content {
+            max-width: 400px;
+        }
+        
+        .medication-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .medication-actions button {
+            flex: 1;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .edit-button {
+            background-color: #2196F3;
+            color: white;
+        }
+        
+        .delete-button {
+            background-color: #f44336;
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -372,16 +401,16 @@
     </div>
     
     <div class="container">
-        <!-- ホーム画面 -->
+        <!-- 服用画面 -->
         <div id="home-page" class="page active">
             <div id="stock-warnings"></div>
             <h2>今日の服薬</h2>
             <div id="today-medications"></div>
         </div>
         
-        <!-- 薬管理画面 -->
+        <!-- 薬箱画面 -->
         <div id="medications-page" class="page">
-            <h2>登録済みの薬</h2>
+            <h2>薬箱</h2>
             <div id="medications-list"></div>
         </div>
         
@@ -421,12 +450,12 @@
     <!-- タブバー -->
     <div class="tab-bar">
         <button class="tab active" onclick="showPage('home')">
-            <div>🏠</div>
-            <div>ホーム</div>
+            <div>💊</div>
+            <div>服用</div>
         </button>
         <button class="tab" onclick="showPage('medications')">
-            <div>💊</div>
-            <div>薬管理</div>
+            <div>🏫</div>
+            <div>薬箱</div>
         </button>
         <button class="tab" onclick="showPage('history')">
             <div>📊</div>
@@ -490,6 +519,61 @@
                 <div class="form-buttons">
                     <button type="submit" class="save-button">保存</button>
                     <button type="button" class="cancel-button" onclick="hideAddModal()">キャンセル</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- 薬編集モーダル -->
+    <div id="edit-modal" class="modal edit-modal">
+        <div class="modal-content">
+            <h3>薬情報を編集</h3>
+            <form id="edit-medication-form">
+                <input type="hidden" id="edit-med-id">
+                <div class="form-group">
+                    <label for="edit-med-name">薬の名前</label>
+                    <input type="text" id="edit-med-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-med-dosage">用量（1回あたり）</label>
+                    <input type="text" id="edit-med-dosage" placeholder="例: 1錠, 2包" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-med-frequency">服用頻度</label>
+                    <select id="edit-med-frequency" required>
+                        <option value="毎食後">毎食後</option>
+                        <option value="朝食後">朝食後</option>
+                        <option value="昼食後">昼食後</option>
+                        <option value="夕食後">夕食後</option>
+                        <option value="朝夕食後">朝夕食後</option>
+                        <option value="就寝前">就寝前</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="edit-med-stock">現在の在庫数</label>
+                    <input type="number" id="edit-med-stock" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-med-purpose">用途</label>
+                    <select id="edit-med-purpose" onchange="toggleEditCustomPurpose()">
+                        <option value="">選択してください</option>
+                        <option value="頭痛をやわらげる">頭痛をやわらげる</option>
+                        <option value="痛み止め">痛み止め</option>
+                        <option value="咳止め">咳止め</option>
+                        <option value="解熱">解熱</option>
+                        <option value="胃腸薬">胃腸薬</option>
+                        <option value="アレルギー">アレルギー</option>
+                        <option value="高血圧">高血圧</option>
+                        <option value="糖尿病">糖尿病</option>
+                        <option value="骨粗松症">骨粗松症</option>
+                        <option value="ビタミン・サプリメント">ビタミン・サプリメント</option>
+                        <option value="other">その他</option>
+                    </select>
+                    <input type="text" id="edit-med-purpose-custom" placeholder="用途を入力してください" style="display:none; margin-top: 10px;">
+                </div>
+                <div class="form-buttons">
+                    <button type="submit" class="save-button">保存</button>
+                    <button type="button" class="cancel-button" onclick="hideEditModal()">キャンセル</button>
                 </div>
             </form>
         </div>
@@ -897,6 +981,10 @@
                     <div class="medication-info">${med.dosage} - ${med.frequency}</div>
                     <div class="medication-info">在庫: ${med.stock}個</div>
                     ${med.purpose ? `<div class="medication-info">用途: ${med.purpose}</div>` : ''}
+                    <div class="medication-actions">
+                        <button class="edit-button" onclick="showEditModal(${med.id})">📝 編集</button>
+                        <button class="delete-button" onclick="deleteMedication(${med.id})">🗑️ 削除</button>
+                    </div>
                 `;
                 container.appendChild(card);
             });
@@ -1827,6 +1915,109 @@
             } else {
                 return purposeSelect.value;
             }
+        }
+        
+        // 薬編集モーダルを表示
+        function showEditModal(medId) {
+            const med = medications.find(m => m.id === medId);
+            if (!med) return;
+            
+            document.getElementById('edit-med-id').value = med.id;
+            document.getElementById('edit-med-name').value = med.name;
+            document.getElementById('edit-med-dosage').value = med.dosage;
+            document.getElementById('edit-med-frequency').value = med.frequency;
+            document.getElementById('edit-med-stock').value = med.stock;
+            
+            // 用途の設定
+            const purposeSelect = document.getElementById('edit-med-purpose');
+            const customInput = document.getElementById('edit-med-purpose-custom');
+            
+            if (med.purpose && !Array.from(purposeSelect.options).find(opt => opt.value === med.purpose)) {
+                purposeSelect.value = 'other';
+                customInput.style.display = 'block';
+                customInput.value = med.purpose;
+            } else {
+                purposeSelect.value = med.purpose || '';
+                customInput.style.display = 'none';
+                customInput.value = '';
+            }
+            
+            document.getElementById('edit-modal').style.display = 'block';
+        }
+        
+        // 薬編集モーダルを非表示
+        function hideEditModal() {
+            document.getElementById('edit-modal').style.display = 'none';
+            document.getElementById('edit-medication-form').reset();
+        }
+        
+        // 編集時のカスタム用途入力の表示切り替え
+        function toggleEditCustomPurpose() {
+            const purposeSelect = document.getElementById('edit-med-purpose');
+            const customInput = document.getElementById('edit-med-purpose-custom');
+            
+            if (purposeSelect.value === 'other') {
+                customInput.style.display = 'block';
+                customInput.required = true;
+            } else {
+                customInput.style.display = 'none';
+                customInput.required = false;
+                customInput.value = '';
+            }
+        }
+        
+        // 編集時の用途の値を取得
+        function getEditPurposeValue() {
+            const purposeSelect = document.getElementById('edit-med-purpose');
+            const customInput = document.getElementById('edit-med-purpose-custom');
+            
+            if (purposeSelect.value === 'other') {
+                return customInput.value;
+            } else {
+                return purposeSelect.value;
+            }
+        }
+        
+        // 薬情報の編集
+        document.getElementById('edit-medication-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const medId = parseInt(document.getElementById('edit-med-id').value);
+            const medIndex = medications.findIndex(m => m.id === medId);
+            
+            if (medIndex !== -1) {
+                medications[medIndex] = {
+                    ...medications[medIndex],
+                    name: document.getElementById('edit-med-name').value,
+                    dosage: document.getElementById('edit-med-dosage').value,
+                    frequency: document.getElementById('edit-med-frequency').value,
+                    stock: parseInt(document.getElementById('edit-med-stock').value),
+                    purpose: getEditPurposeValue()
+                };
+                
+                localStorage.setItem('medications', JSON.stringify(medications));
+                
+                hideEditModal();
+                updateMedicationsList();
+                
+                // 通知スケジュールを再設定
+                setMedicationReminders(medications[medIndex]);
+                
+                alert('✅ 薬情報を更新しました');
+            }
+        });
+        
+        // 薬の削除
+        function deleteMedication(medId) {
+            if (!confirm('本当にこの薬を削除しますか？')) {
+                return;
+            }
+            
+            medications = medications.filter(m => m.id !== medId);
+            localStorage.setItem('medications', JSON.stringify(medications));
+            
+            updateMedicationsList();
+            alert('✅ 薬を削除しました');
         }
         
         // 定期的に画面を更新（1分ごと）
