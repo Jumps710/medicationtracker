@@ -1,0 +1,33 @@
+{
+  "name": "お薬のんだ？ - 服薬管理アプリ",
+  "short_name": "お薬のんだ？",
+  "description": "写真記録機能付きの服薬管理PWAアプリ",
+  "start_url": "/medicationtracker/",
+  "display": "standalone",
+  "background_color": "#f5f5f5",
+  "theme_color": "#4CAF50",
+  "orientation": "portrait",
+  "scope": "/medicationtracker/",
+  "lang": "ja",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Ccircle cx='96' cy='96' r='88' fill='%234CAF50'/%3E%3Ctext x='96' y='130' font-size='80' text-anchor='middle' fill='white'%3E💊%3C/text%3E%3C/svg%3E",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Ccircle cx='256' cy='256' r='240' fill='%234CAF50'/%3E%3Ctext x='256' y='340' font-size='200' text-anchor='middle' fill='white'%3E💊%3C/text%3E%3C/svg%3E",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ],
+  "categories": ["health", "medical", "productivity"],
+  "screenshots": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 390 844'%3E%3Crect width='390' height='844' fill='%23f5f5f5'/%3E%3Crect x='0' y='0' width='390' height='60' fill='%234CAF50'/%3E%3Ctext x='195' y='40' text-anchor='middle' fill='white' font-size='20'%3E お薬のんだ？ %3C/text%3E%3C/svg%3E",
+      "sizes": "390x844",
+      "type": "image/svg+xml",
+      "form_factor": "narrow"
+    }
+  ]
+}
