@@ -670,6 +670,14 @@
                         <input type="number" id="med-alert-threshold-custom" placeholder="個数を入力" min="1" style="display: none; width: 100px;">
                     </div>
                 </div>
+                <div class="form-group">
+                    <label for="med-photo">薬の写真（任意）</label>
+                    <input type="file" id="med-photo" accept="image/*" onchange="handleMedicationPhotoUpload(event)">
+                    <div id="med-photo-preview" style="margin-top: 10px; display: none;">
+                        <img id="med-photo-thumbnail" style="width: 80px; height: 80px; object-fit: cover; border-radius: 5px; border: 2px solid #ddd;">
+                        <button type="button" onclick="removeMedicationPhoto()" style="margin-left: 10px; padding: 5px 10px; background: #f44336; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 12px;">削除</button>
+                    </div>
+                </div>
                 <div class="form-buttons">
                     <button type="submit" class="save-button">保存</button>
                     <button type="button" class="cancel-button" onclick="hideAddModal()">キャンセル</button>
@@ -856,6 +864,43 @@
             }
         }
         
+        // 薬の写真アップロード処理
+        function handleMedicationPhotoUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                const imageDataUrl = e.target.result;
+                
+                // 画像を圧縮
+                const compressedImage = await compressImage(imageDataUrl, 400, 0.8);
+                
+                // プレビュー表示
+                const preview = document.getElementById('med-photo-preview');
+                const thumbnail = document.getElementById('med-photo-thumbnail');
+                
+                thumbnail.src = compressedImage;
+                preview.style.display = 'block';
+                
+                // 圧縮済み画像をデータとして保存
+                preview.dataset.photo = compressedImage;
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        // 薬の写真削除
+        function removeMedicationPhoto() {
+            const preview = document.getElementById('med-photo-preview');
+            const thumbnail = document.getElementById('med-photo-thumbnail');
+            const fileInput = document.getElementById('med-photo');
+            
+            preview.style.display = 'none';
+            thumbnail.src = '';
+            fileInput.value = '';
+            delete preview.dataset.photo;
+        }
+        
         // 薬の追加/編集
         document.getElementById('add-medication-form').addEventListener('submit', function(e) {
             e.preventDefault();
@@ -884,6 +929,12 @@
                 purpose: purpose || '' // 薬の用途を追加
             };
             
+            // 写真データを追加
+            const preview = document.getElementById('med-photo-preview');
+            if (preview.dataset.photo) {
+                medicationData.photo = preview.dataset.photo;
+            }
+            
             if (editId) {
                 // 編集モード
                 const medIndex = medications.findIndex(m => m.id === parseInt(editId));
@@ -909,6 +960,8 @@
             localStorage.setItem('medications', JSON.stringify(medications));
             
             hideAddModal();
+            removeMedicationPhoto();
+            updateMedicationsList();
             showPage('medications');
         });
         
@@ -1151,15 +1204,40 @@
                     const card = document.createElement('div');
                     card.className = 'medication-card';
                     card.style.border = '2px solid #ff9800';
+                    const stockStatus = warning.stock <= (warning.alertThreshold || 7) ? 'low' : 'normal';
+                    const stockColor = stockStatus === 'low' ? '#ff6b6b' : '#38a169';
+                    
                     card.innerHTML = `
-                        <div class="medication-name">${warning.name} - ${warning.mealTime}</div>
-                        <div class="medication-info" style="color: #ff6b6b;">服用時間から2時間以上経過</div>
-                        <div class="medication-info">${warning.dosage} - ${warning.frequency}</div>
-                        ${warning.purpose ? `<div class="medication-info">用途: ${warning.purpose}</div>` : ''}
-                        <div class="medication-info">在庫: ${warning.stock}個</div>
+                        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                            <!-- 薬情報部分 -->
+                            <div style="flex: 1; min-width: 0;">
+                                <div class="medication-name" style="font-size: 18px; font-weight: bold; margin-bottom: 4px;">${warning.name} - ${warning.mealTime}</div>
+                                <div class="medication-info" style="color: #ff6b6b; margin-bottom: 3px; font-weight: bold;">⏰ 服用時間から2時間以上経過</div>
+                                <div class="medication-info" style="margin-bottom: 3px;">${warning.dosage} - ${warning.frequency}</div>
+                                ${warning.purpose ? `<div class="medication-info" style="color: #666; font-size: 13px;">用途: ${warning.purpose}</div>` : ''}
+                            </div>
+                            
+                            <!-- 在庫表示部分 -->
+                            <div style="text-align: center; padding: 8px 12px; background: ${stockStatus === 'low' ? '#fff5f5' : '#f0f9ff'}; border-radius: 8px; border: 1px solid ${stockStatus === 'low' ? '#fed7d7' : '#bfdbfe'};">
+                                <div style="font-size: 20px; font-weight: bold; color: ${stockColor};">${warning.stock}</div>
+                                <div style="font-size: 11px; color: #666;">個</div>
+                                ${stockStatus === 'low' ? '<div style="font-size: 10px; color: #f56565; margin-top: 2px;">⚠️ 少ない</div>' : ''}
+                            </div>
+                            
+                            <!-- サムネイル画像 -->
+                            ${warning.photo ? `
+                                <div>
+                                    <img src="${warning.photo}" alt="${warning.name}" 
+                                         style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"
+                                         onclick="showPhotoModal('${warning.photo}')">
+                                </div>
+                            ` : ''}
+                        </div>
+                        
+                        <!-- ボタン部分 -->
                         <button class="take-button" 
                                 onclick="showCameraModal(${warning.id}, '${warning.mealTime}')"
-                                style="background: #ff9800;">
+                                style="background: #ff9800; width: 100%;">
                             📸 今すぐ服用する
                         </button>
                     `;
@@ -1208,17 +1286,43 @@
                 const taken = isTakenToday(med.id, mealTime);
                 const card = document.createElement('div');
                 card.className = 'medication-card';
+                const stockStatus = med.stock <= (med.alertThreshold || 7) ? 'low' : 'normal';
+                const stockColor = stockStatus === 'low' ? '#ff6b6b' : '#38a169';
+                
                 card.innerHTML = `
-                    <div class="medication-name">${med.name}</div>
-                    <div class="medication-info">${med.dosage} - ${med.frequency}</div>
-                    ${med.purpose ? `<div class="medication-info">用途: ${med.purpose}</div>` : ''}
-                    <div class="medication-info">在庫: ${med.stock}個</div>
+                    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                        <!-- 薬情報部分 -->
+                        <div style="flex: 1; min-width: 0;">
+                            <div class="medication-name" style="font-size: 18px; font-weight: bold; margin-bottom: 4px;">${med.name}</div>
+                            <div class="medication-info" style="margin-bottom: 3px;">${med.dosage} - ${med.frequency}</div>
+                            ${med.purpose ? `<div class="medication-info" style="color: #666; font-size: 13px;">用途: ${med.purpose}</div>` : ''}
+                        </div>
+                        
+                        <!-- 在庫表示部分 -->
+                        <div style="text-align: center; padding: 8px 12px; background: ${stockStatus === 'low' ? '#fff5f5' : '#f0f9ff'}; border-radius: 8px; border: 1px solid ${stockStatus === 'low' ? '#fed7d7' : '#bfdbfe'};">
+                            <div style="font-size: 20px; font-weight: bold; color: ${stockColor};">${med.stock}</div>
+                            <div style="font-size: 11px; color: #666;">個</div>
+                            ${stockStatus === 'low' ? '<div style="font-size: 10px; color: #f56565; margin-top: 2px;">⚠️ 少ない</div>' : ''}
+                        </div>
+                        
+                        <!-- サムネイル画像 -->
+                        ${med.photo ? `
+                            <div>
+                                <img src="${med.photo}" alt="${med.name}" 
+                                     style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"
+                                     onclick="showPhotoModal('${med.photo}')">
+                            </div>
+                        ` : ''}
+                    </div>
+                    
+                    <!-- ボタン部分 -->
                     <button class="take-button ${taken ? 'taken' : ''}" 
                             onclick="showCameraModal(${med.id}, '${mealTime}')"
-                            ${taken ? 'disabled' : ''}>
+                            ${taken ? 'disabled' : ''}
+                            style="width: 100%; margin-bottom: 8px;">
                         ${taken ? '✓ 服用済み' : '📸 服用する'}
                     </button>
-                    ${taken ? `<button class="cancel-button" onclick="undoMedication(${med.id}, '${mealTime}')" style="margin-top: 5px; width: 100%; padding: 8px; font-size: 14px;">🔄 取り消し</button>` : ''}
+                    ${taken ? `<button class="cancel-button" onclick="undoMedication(${med.id}, '${mealTime}')" style="width: 100%; padding: 8px; font-size: 14px;">🔄 取り消し</button>` : ''}
                 `;
                 container.appendChild(card);
             });
@@ -1345,14 +1449,39 @@
             medications.forEach(med => {
                 const card = document.createElement('div');
                 card.className = 'medication-card';
+                const stockStatus = med.stock <= (med.alertThreshold || 7) ? 'low' : 'normal';
+                const stockColor = stockStatus === 'low' ? '#ff6b6b' : '#38a169';
+                
                 card.innerHTML = `
-                    <div class="medication-name">${med.name}</div>
-                    <div class="medication-info">${med.dosage} - ${med.frequency}</div>
-                    ${med.purpose ? `<div class="medication-info">用途: ${med.purpose}</div>` : ''}
-                    <div class="medication-info">在庫: ${med.stock}個 (警告: ${med.alertThreshold || 7}個)</div>
-                    <div style="margin-top: 10px;">
-                        <button onclick="editMedication(${med.id})" style="padding: 5px 10px; margin-right: 5px; background: #2196F3; color: white; border: none; border-radius: 3px; cursor: pointer;">✏️ 編集</button>
-                        <button onclick="deleteMedication(${med.id})" style="padding: 5px 10px; background: #f44336; color: white; border: none; border-radius: 3px; cursor: pointer;">🗑️ 削除</button>
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <!-- 薬情報部分 -->
+                        <div style="flex: 1; min-width: 0;">
+                            <div class="medication-name" style="font-size: 18px; font-weight: bold; margin-bottom: 4px;">${med.name}</div>
+                            <div class="medication-info" style="margin-bottom: 3px;">${med.dosage} - ${med.frequency}</div>
+                            ${med.purpose ? `<div class="medication-info" style="color: #666; font-size: 13px;">用途: ${med.purpose}</div>` : ''}
+                        </div>
+                        
+                        <!-- 在庫表示部分 -->
+                        <div style="text-align: center; padding: 8px 12px; background: ${stockStatus === 'low' ? '#fff5f5' : '#f0f9ff'}; border-radius: 8px; border: 1px solid ${stockStatus === 'low' ? '#fed7d7' : '#bfdbfe'};">
+                            <div style="font-size: 20px; font-weight: bold; color: ${stockColor};">${med.stock}</div>
+                            <div style="font-size: 11px; color: #666;">個</div>
+                            ${stockStatus === 'low' ? '<div style="font-size: 10px; color: #f56565; margin-top: 2px;">⚠️ 少ない</div>' : ''}
+                        </div>
+                        
+                        <!-- サムネイル画像 -->
+                        ${med.photo ? `
+                            <div>
+                                <img src="${med.photo}" alt="${med.name}" 
+                                     style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"
+                                     onclick="showPhotoModal('${med.photo}')">
+                            </div>
+                        ` : ''}
+                    </div>
+                    
+                    <!-- ボタン部分 -->
+                    <div style="margin-top: 15px; display: flex; gap: 8px;">
+                        <button onclick="editMedication(${med.id})" style="flex: 1; padding: 8px 12px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px;">✏️ 編集</button>
+                        <button onclick="deleteMedication(${med.id})" style="flex: 1; padding: 8px 12px; background: #f56565; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px;">🗑️ 削除</button>
                     </div>
                 `;
                 container.appendChild(card);
@@ -2080,6 +2209,18 @@
                 document.getElementById('med-purpose-custom').required = false;
             }
             
+            // 写真を設定
+            if (med.photo) {
+                const preview = document.getElementById('med-photo-preview');
+                const thumbnail = document.getElementById('med-photo-thumbnail');
+                
+                thumbnail.src = med.photo;
+                preview.style.display = 'block';
+                preview.dataset.photo = med.photo;
+            } else {
+                removeMedicationPhoto();
+            }
+            
             // 編集モードでモーダルを表示
             document.getElementById('add-modal').style.display = 'block';
             document.getElementById('add-modal').dataset.editId = medId;
@@ -2315,6 +2456,56 @@
                 }
             });
         });
+
+        // 写真モーダル表示機能
+        function showPhotoModal(photoUrl) {
+            // モーダルが存在しない場合は作成
+            let modal = document.getElementById('photo-modal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'photo-modal';
+                modal.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100vw;
+                    height: 100vh;
+                    background: rgba(0, 0, 0, 0.9);
+                    display: none;
+                    justify-content: center;
+                    align-items: center;
+                    z-index: 1000;
+                    cursor: pointer;
+                `;
+                
+                const img = document.createElement('img');
+                img.id = 'photo-modal-img';
+                img.style.cssText = `
+                    max-width: 90vw;
+                    max-height: 90vh;
+                    object-fit: contain;
+                    border-radius: 10px;
+                `;
+                
+                modal.appendChild(img);
+                document.body.appendChild(modal);
+                
+                // クリックで閉じる
+                modal.addEventListener('click', hidePhotoModal);
+            }
+            
+            // 写真を設定して表示
+            document.getElementById('photo-modal-img').src = photoUrl;
+            modal.style.display = 'flex';
+        }
+        
+        // 写真モーダル非表示
+        function hidePhotoModal() {
+            const modal = document.getElementById('photo-modal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
 
         // アプリ起動時にも実行
         cleanupOldPhotos();
