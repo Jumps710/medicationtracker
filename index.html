@@ -1007,6 +1007,104 @@
             return '';
         }
         
+        // 次の服用タイミングを計算
+        function getNextMedicationTime(medication) {
+            const now = new Date();
+            // createdAtが無い古い薬は、現在時刻の1日前として扱う（通常表示）
+            const registeredAt = medication.createdAt ? new Date(medication.createdAt) : new Date(now.getTime() - 24 * 60 * 60 * 1000);
+            
+            // 時間設定を取得
+            const saved = localStorage.getItem('mealTimeSettings');
+            let settings = {
+                breakfast: '09:00',
+                lunch: '13:00',
+                dinner: '19:00',
+                bedtime: '22:00'
+            };
+            
+            if (saved) {
+                settings = JSON.parse(saved);
+            }
+            
+            // 時間を分に変換
+            const toMinutes = (timeStr) => {
+                const [h, m] = timeStr.split(':').map(Number);
+                return h * 60 + m;
+            };
+            
+            const timeMap = {
+                '朝食後': toMinutes(settings.breakfast),
+                '昼食後': toMinutes(settings.lunch),
+                '夕食後': toMinutes(settings.dinner),
+                '就寝前': toMinutes(settings.bedtime)
+            };
+            
+            // 服用頻度に応じた次回服用時間を計算
+            const frequency = medication.frequency;
+            let nextTimes = [];
+            
+            switch(frequency) {
+                case '毎食後':
+                    nextTimes = [timeMap['朝食後'], timeMap['昼食後'], timeMap['夕食後']];
+                    break;
+                case '朝食後':
+                    nextTimes = [timeMap['朝食後']];
+                    break;
+                case '昼食後':
+                    nextTimes = [timeMap['昼食後']];
+                    break;
+                case '夕食後':
+                    nextTimes = [timeMap['夕食後']];
+                    break;
+                case '朝夕食後':
+                    nextTimes = [timeMap['朝食後'], timeMap['夕食後']];
+                    break;
+                case '就寝前':
+                    nextTimes = [timeMap['就寝前']];
+                    break;
+            }
+            
+            // 登録時刻以降の次回服用時刻を見つける
+            const registeredTime = registeredAt.getHours() * 60 + registeredAt.getMinutes();
+            const registeredDate = registeredAt.toDateString();
+            const currentDate = now.toDateString();
+            
+            // 登録当日の場合
+            if (registeredDate === currentDate) {
+                // 登録時刻以降の服用時間を探す
+                const todayNextTimes = nextTimes.filter(time => time > registeredTime);
+                
+                if (todayNextTimes.length > 0) {
+                    // 今日の残りの服用時間がある
+                    return {
+                        canShowToday: true,
+                        nextTimes: todayNextTimes.map(time => {
+                            const mealName = Object.keys(timeMap).find(key => timeMap[key] === time);
+                            return { time, mealName };
+                        })
+                    };
+                } else {
+                    // 今日はもう服用時間がない、明日から
+                    return {
+                        canShowToday: false,
+                        nextTimes: nextTimes.map(time => {
+                            const mealName = Object.keys(timeMap).find(key => timeMap[key] === time);
+                            return { time, mealName };
+                        })
+                    };
+                }
+            } else {
+                // 登録翌日以降なので通常通り表示
+                return {
+                    canShowToday: true,
+                    nextTimes: nextTimes.map(time => {
+                        const mealName = Object.keys(timeMap).find(key => timeMap[key] === time);
+                        return { time, mealName };
+                    })
+                };
+            }
+        }
+        
         // 今日の服薬リストを更新
         function updateTodayMedications() {
             const container = document.getElementById('today-medications');
@@ -1041,15 +1139,31 @@
                 '就寝前': toMinutes(settings.bedtime)
             };
             
-            // 過去2時間以内に服用すべきだった薬を取得
+            // 過去2時間以内に服用すべきだった薬を取得（登録日時を考慮）
             const overdueWarnings = [];
             for (const [meal, time] of Object.entries(mealTimes)) {
                 if (currentTime >= time + 120) { // 2時間以上経過
                     const overdueMeds = medications.filter(med => {
-                        return (med.frequency === '毎食後' || 
+                        // 基本的な服用頻度チェック
+                        const isThisMealTime = med.frequency === '毎食後' || 
                                med.frequency === meal ||
-                               (med.frequency === '朝夕食後' && (meal === '朝食後' || meal === '夕食後'))) &&
-                               !isTakenToday(med.id, meal);
+                               (med.frequency === '朝夕食後' && (meal === '朝食後' || meal === '夕食後'));
+                        
+                        if (!isThisMealTime || isTakenToday(med.id, meal)) {
+                            return false;
+                        }
+                        
+                        // 登録日時を考慮した判定
+                        const nextMedTime = getNextMedicationTime(med);
+                        const registeredAt = new Date(med.createdAt);
+                        const today = new Date();
+                        
+                        // 登録日当日の場合は、登録時刻以降の服用時間のみ対象
+                        if (registeredAt.toDateString() === today.toDateString()) {
+                            return nextMedTime.nextTimes.some(nt => nt.mealName === meal);
+                        }
+                        
+                        return true;
                     });
                     overdueWarnings.push(...overdueMeds.map(med => ({...med, mealTime: meal})));
                 }
@@ -1086,11 +1200,33 @@
                 checkOverdueNotifications(overdueWarnings);
             }
             
-            // 現在の服用時間の薬を表示
+            // 現在の服用時間の薬を表示（登録日時を考慮）
             const todayMeds = medications.filter(med => {
-                return med.frequency === '毎食後' || 
+                // 薬の次回服用タイミングを取得
+                const nextMedTime = getNextMedicationTime(med);
+                
+                // 今日表示できない薬は除外
+                if (!nextMedTime.canShowToday) {
+                    return false;
+                }
+                
+                // 現在の食事時間に該当するかチェック
+                const isCurrentMealTime = med.frequency === '毎食後' || 
                        med.frequency === mealTime ||
                        (med.frequency === '朝夕食後' && (mealTime === '朝食後' || mealTime === '夕食後'));
+                
+                // 登録日当日の場合は、次回服用時間に含まれているかもチェック
+                if (isCurrentMealTime) {
+                    const registeredAt = new Date(med.createdAt);
+                    const today = new Date();
+                    
+                    if (registeredAt.toDateString() === today.toDateString()) {
+                        // 登録日当日は、次回服用時間リストに含まれている食事時間のみ表示
+                        return nextMedTime.nextTimes.some(nt => nt.mealName === mealTime);
+                    }
+                }
+                
+                return isCurrentMealTime;
             });
             
             if (todayMeds.length === 0 && overdueWarnings.length === 0) {
