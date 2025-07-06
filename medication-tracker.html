@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,7 +10,8 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="お薬のんだ？">
-    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%236366f1'/%3E%3Ctext x='50' y='65' font-size='50' text-anchor='middle' fill='white'%3E💊%3C/text%3E%3C/svg%3E">
+    <link rel="apple-touch-icon"
+        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%236366f1'/%3E%3Ctext x='50' y='65' font-size='50' text-anchor='middle' fill='white'%3E💊%3C/text%3E%3C/svg%3E">
     <script src="api-config.js"></script>
     <style>
         * {
@@ -17,28 +19,28 @@
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background-color: #f5f5f5;
             color: #333;
             padding-bottom: 70px;
         }
-        
+
         .header {
             background-color: #6366f1;
             color: white;
             padding: 15px;
             text-align: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
-        
+
         .container {
             max-width: 600px;
             margin: 0 auto;
             padding: 20px;
         }
-        
+
         .tab-bar {
             position: fixed;
             bottom: 0;
@@ -46,9 +48,9 @@
             right: 0;
             background-color: white;
             display: flex;
-            box-shadow: 0 -2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
         }
-        
+
         .tab {
             flex: 1;
             padding: 15px;
@@ -59,40 +61,40 @@
             font-size: 14px;
             color: #666;
         }
-        
+
         .tab.active {
             color: #6366f1;
             font-weight: bold;
         }
-        
+
         .page {
             display: none;
         }
-        
+
         .page.active {
             display: block;
         }
-        
+
         .medication-card {
             background: white;
             border-radius: 10px;
             padding: 15px;
             margin-bottom: 15px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
-        
+
         .medication-name {
             font-size: 18px;
             font-weight: bold;
             margin-bottom: 5px;
         }
-        
+
         .medication-info {
             color: #666;
             font-size: 14px;
             margin-bottom: 10px;
         }
-        
+
         .take-button {
             background-color: #6366f1;
             color: white;
@@ -103,17 +105,17 @@
             font-size: 16px;
             width: 100%;
         }
-        
+
         .take-button:hover {
             background-color: #5046e5;
         }
-        
+
         .take-button.taken {
             background-color: #ddd;
             color: #666;
             cursor: not-allowed;
         }
-        
+
         .add-button {
             position: fixed;
             bottom: 80px;
@@ -126,10 +128,10 @@
             border-radius: 50%;
             font-size: 24px;
             cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
             z-index: 1000;
         }
-        
+
         .modal {
             display: none;
             position: fixed;
@@ -137,10 +139,10 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background-color: rgba(0,0,0,0.5);
+            background-color: rgba(0, 0, 0, 0.5);
             z-index: 2000;
         }
-        
+
         .modal-content {
             position: absolute;
             top: 50%;
@@ -152,31 +154,32 @@
             width: 90%;
             max-width: 400px;
         }
-        
+
         .form-group {
             margin-bottom: 15px;
         }
-        
+
         .form-group label {
             display: block;
             margin-bottom: 5px;
             font-weight: bold;
         }
-        
-        .form-group input, .form-group select {
+
+        .form-group input,
+        .form-group select {
             width: 100%;
             padding: 10px;
             border: 1px solid #ddd;
             border-radius: 5px;
             font-size: 16px;
         }
-        
+
         .form-buttons {
             display: flex;
             gap: 10px;
             margin-top: 20px;
         }
-        
+
         .form-buttons button {
             flex: 1;
             padding: 10px;
@@ -185,35 +188,35 @@
             cursor: pointer;
             font-size: 16px;
         }
-        
+
         .save-button {
             background-color: #6366f1;
             color: white;
         }
-        
+
         .cancel-button {
             background-color: #f44336;
             color: white;
         }
-        
+
         .history-item {
             background: white;
             border-radius: 10px;
             padding: 15px;
             margin-bottom: 10px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
-        
+
         .history-date {
             font-weight: bold;
             margin-bottom: 5px;
         }
-        
+
         .history-meds {
             color: #666;
             font-size: 14px;
         }
-        
+
         .stock-warning {
             background-color: #ff9800;
             color: white;
@@ -222,7 +225,7 @@
             margin-bottom: 15px;
             text-align: center;
         }
-        
+
         .camera-button {
             background-color: #2196F3;
             color: white;
@@ -234,41 +237,41 @@
             margin-top: 5px;
             width: 100%;
         }
-        
+
         .camera-modal .modal-content {
             max-width: 500px;
         }
-        
+
         .camera-container {
             text-align: center;
             margin: 20px 0;
         }
-        
+
         .camera-video {
             width: 100%;
             max-width: 400px;
             border-radius: 10px;
             margin-bottom: 15px;
         }
-        
+
         .camera-canvas {
             display: none;
         }
-        
+
         .captured-image {
             width: 100%;
             max-width: 400px;
             border-radius: 10px;
             margin-bottom: 15px;
         }
-        
+
         .camera-controls {
             display: flex;
             gap: 10px;
             justify-content: center;
             margin-bottom: 15px;
         }
-        
+
         .camera-controls button {
             padding: 10px 20px;
             border: none;
@@ -276,17 +279,17 @@
             cursor: pointer;
             font-size: 16px;
         }
-        
+
         .capture-button {
             background-color: #6366f1;
             color: white;
         }
-        
+
         .retake-button {
             background-color: #ff9800;
             color: white;
         }
-        
+
         .analysis-result {
             background: #e3f2fd;
             border: 1px solid #2196F3;
@@ -295,36 +298,36 @@
             margin: 15px 0;
             text-align: center;
         }
-        
+
         .success-message {
             background-color: #6366f1;
             color: white;
         }
-        
+
         .warning-message {
             background-color: #ff9800;
             color: white;
         }
-        
+
         .settings-section {
             background: white;
             border-radius: 10px;
             padding: 20px;
             margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
-        
+
         .settings-section h3 {
             margin-bottom: 10px;
             color: #333;
         }
-        
+
         .settings-description {
             color: #666;
             font-size: 14px;
             margin-bottom: 20px;
         }
-        
+
         .time-input {
             width: 100%;
             padding: 10px;
@@ -332,49 +335,49 @@
             border-radius: 5px;
             font-size: 16px;
         }
-        
+
         .missed-dose-card {
             background: #fff3cd;
             border: 2px solid #ff9800;
             border-radius: 10px;
             padding: 15px;
             margin-bottom: 15px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
-        
+
         .missed-dose-header {
             display: flex;
             align-items: center;
             margin-bottom: 10px;
             color: #856404;
         }
-        
+
         .missed-dose-icon {
             font-size: 24px;
             margin-right: 10px;
         }
-        
+
         .missed-dose-title {
             font-size: 16px;
             font-weight: bold;
         }
-        
+
         .missed-dose-info {
             color: #666;
             font-size: 14px;
             margin-bottom: 10px;
         }
-        
+
         .edit-modal .modal-content {
             max-width: 400px;
         }
-        
+
         .medication-actions {
             display: flex;
             gap: 10px;
             margin-top: 10px;
         }
-        
+
         .medication-actions button {
             flex: 1;
             padding: 8px 12px;
@@ -383,23 +386,24 @@
             cursor: pointer;
             font-size: 14px;
         }
-        
+
         .edit-button {
             background-color: #2196F3;
             color: white;
         }
-        
+
         .delete-button {
             background-color: #f44336;
             color: white;
         }
     </style>
 </head>
+
 <body>
     <div class="header">
         <h1>お薬のんだ？</h1>
     </div>
-    
+
     <div class="container">
         <!-- 服用画面 -->
         <div id="home-page" class="page active">
@@ -407,19 +411,19 @@
             <h2>今日の服薬</h2>
             <div id="today-medications"></div>
         </div>
-        
+
         <!-- 薬箱画面 -->
         <div id="medications-page" class="page">
             <h2>薬箱</h2>
             <div id="medications-list"></div>
         </div>
-        
+
         <!-- 履歴画面 -->
         <div id="history-page" class="page">
             <h2>服薬履歴</h2>
             <div id="history-list"></div>
         </div>
-        
+
         <!-- 設定画面 -->
         <div id="settings-page" class="page">
             <h2>設定</h2>
@@ -446,7 +450,7 @@
             </div>
         </div>
     </div>
-    
+
     <!-- タブバー -->
     <div class="tab-bar">
         <button class="tab active" onclick="showPage('home')">
@@ -466,10 +470,10 @@
             <div>設定</div>
         </button>
     </div>
-    
+
     <!-- 追加ボタン -->
     <button class="add-button" onclick="showAddModal()">+</button>
-    
+
     <!-- 薬追加モーダル -->
     <div id="add-modal" class="modal">
         <div class="modal-content">
@@ -478,6 +482,22 @@
                 <div class="form-group">
                     <label for="med-name">薬の名前</label>
                     <input type="text" id="med-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="med-purpose">用途</label>
+                    <select id="med-purpose" onchange="toggleCustomPurpose()">
+                        <option value="">選択してください</option>
+                        <option value="痛み止め">痛み止め</option>
+                        <option value="咳止め">咳止め</option>
+                        <option value="解熱">解熱</option>
+                        <option value="胃腸調整剤">胃腸薬</option>
+                        <option value="アレルギー">アレルギー</option>
+                        <option value="高血圧">高血圧</option>
+                        <option value="ビタミン・サプリメント">ビタミン・サプリメント</option>
+                        <option value="other">その他</option>
+                    </select>
+                    <input type="text" id="med-purpose-custom" placeholder="用途を入力してください"
+                        style="display:none; margin-top: 10px;">
                 </div>
                 <div class="form-group">
                     <label for="med-dosage">用量（1回あたり）</label>
@@ -499,28 +519,11 @@
                     <input type="number" id="med-stock" required>
                 </div>
                 <div class="form-group">
-                    <label for="med-alert-threshold">在庫アラート闾値</label>
+                    <label for="med-alert-threshold">在庫アラートしきい値</label>
                     <input type="number" id="med-alert-threshold" placeholder="例: 7" value="7" min="1">
                     <small style="color: #666; display: block; margin-top: 5px;">この数以下になったら警告を表示します</small>
                 </div>
-                <div class="form-group">
-                    <label for="med-purpose">用途</label>
-                    <select id="med-purpose" onchange="toggleCustomPurpose()">
-                        <option value="">選択してください</option>
-                        <option value="頭痛をやわらげる">頭痛をやわらげる</option>
-                        <option value="痛み止め">痛み止め</option>
-                        <option value="咳止め">咳止め</option>
-                        <option value="解熱">解熱</option>
-                        <option value="胃腸薬">胃腸薬</option>
-                        <option value="アレルギー">アレルギー</option>
-                        <option value="高血圧">高血圧</option>
-                        <option value="糖尿病">糖尿病</option>
-                        <option value="骨粗松症">骨粗松症</option>
-                        <option value="ビタミン・サプリメント">ビタミン・サプリメント</option>
-                        <option value="other">その他</option>
-                    </select>
-                    <input type="text" id="med-purpose-custom" placeholder="用途を入力してください" style="display:none; margin-top: 10px;">
-                </div>
+
                 <div class="form-buttons">
                     <button type="submit" class="save-button">保存</button>
                     <button type="button" class="cancel-button" onclick="hideAddModal()">キャンセル</button>
@@ -528,7 +531,7 @@
             </form>
         </div>
     </div>
-    
+
     <!-- 薬編集モーダル -->
     <div id="edit-modal" class="modal edit-modal">
         <div class="modal-content">
@@ -579,7 +582,8 @@
                         <option value="ビタミン・サプリメント">ビタミン・サプリメント</option>
                         <option value="other">その他</option>
                     </select>
-                    <input type="text" id="edit-med-purpose-custom" placeholder="用途を入力してください" style="display:none; margin-top: 10px;">
+                    <input type="text" id="edit-med-purpose-custom" placeholder="用途を入力してください"
+                        style="display:none; margin-top: 10px;">
                 </div>
                 <div class="form-buttons">
                     <button type="submit" class="save-button">保存</button>
@@ -588,7 +592,7 @@
             </form>
         </div>
     </div>
-    
+
     <!-- カメラモーダル -->
     <div id="camera-modal" class="modal camera-modal">
         <div class="modal-content">
@@ -597,27 +601,29 @@
                 <video id="camera-video" class="camera-video" autoplay></video>
                 <canvas id="camera-canvas" class="camera-canvas"></canvas>
                 <img id="captured-image" class="captured-image" style="display: none;">
-                
+
                 <div class="camera-controls">
                     <button id="capture-btn" class="capture-button" onclick="capturePhoto()">📷 撮影</button>
-                    <button id="retake-btn" class="retake-button" onclick="retakePhoto()" style="display: none;">🔄 撮り直し</button>
+                    <button id="retake-btn" class="retake-button" onclick="retakePhoto()" style="display: none;">🔄
+                        撮り直し</button>
                 </div>
-                
+
                 <div id="analysis-result" class="analysis-result" style="display: none;"></div>
             </div>
-            
+
             <div class="form-buttons">
-                <button id="confirm-btn" class="save-button" onclick="confirmMedication()" style="display: none;">服用を確認</button>
+                <button id="confirm-btn" class="save-button" onclick="confirmMedication()"
+                    style="display: none;">服用を確認</button>
                 <button class="cancel-button" onclick="hideCameraModal()">キャンセル</button>
             </div>
         </div>
     </div>
-    
+
     <script>
         // データ管理
         let medications = JSON.parse(localStorage.getItem('medications')) || [];
         let history = JSON.parse(localStorage.getItem('history')) || [];
-        
+
         // 服用時間設定のデフォルト値
         const defaultTimeSettings = {
             morning: '08:30',
@@ -625,10 +631,10 @@
             dinner: '19:30',
             bedtime: '22:00'
         };
-        
+
         // 保存された時間設定を読み込み
         let timeSettings = JSON.parse(localStorage.getItem('timeSettings')) || defaultTimeSettings;
-        
+
         // 設定画面を更新
         function updateSettingsPage() {
             document.getElementById('morning-time').value = timeSettings.morning;
@@ -636,7 +642,7 @@
             document.getElementById('dinner-time').value = timeSettings.dinner;
             document.getElementById('bedtime-time').value = timeSettings.bedtime;
         }
-        
+
         // 時間設定を保存
         function saveTimeSettings() {
             timeSettings = {
@@ -645,39 +651,39 @@
                 dinner: document.getElementById('dinner-time').value,
                 bedtime: document.getElementById('bedtime-time').value
             };
-            
+
             localStorage.setItem('timeSettings', JSON.stringify(timeSettings));
             alert('✅ 服用時間設定を保存しました');
-            
+
             // 通知スケジュールを再設定
             medications.forEach(medication => {
                 setMedicationReminders(medication);
             });
         }
-        
+
         // カメラ関連の変数
         let currentMedId = null;
         let currentMealTime = null;
         let cameraStream = null;
-        
+
         // ページ切り替え
         function showPage(pageName) {
             // すべてのページを非表示
             document.querySelectorAll('.page').forEach(page => {
                 page.classList.remove('active');
             });
-            
+
             // すべてのタブを非アクティブ
             document.querySelectorAll('.tab').forEach(tab => {
                 tab.classList.remove('active');
             });
-            
+
             // 選択されたページを表示
             document.getElementById(pageName + '-page').classList.add('active');
-            
+
             // 選択されたタブをアクティブ
             event.target.closest('.tab').classList.add('active');
-            
+
             // ページに応じてデータを更新
             if (pageName === 'home') {
                 updateTodayMedications();
@@ -690,21 +696,21 @@
                 updateSettingsPage();
             }
         }
-        
+
         // モーダル表示/非表示
         function showAddModal() {
             document.getElementById('add-modal').style.display = 'block';
         }
-        
+
         function hideAddModal() {
             document.getElementById('add-modal').style.display = 'none';
             document.getElementById('add-medication-form').reset();
         }
-        
+
         // 薬の追加
-        document.getElementById('add-medication-form').addEventListener('submit', function(e) {
+        document.getElementById('add-medication-form').addEventListener('submit', function (e) {
             e.preventDefault();
-            
+
             const medication = {
                 id: Date.now(),
                 name: document.getElementById('med-name').value,
@@ -715,41 +721,41 @@
                 purpose: getPurposeValue(),
                 createdAt: new Date().toISOString()
             };
-            
+
             medications.push(medication);
             localStorage.setItem('medications', JSON.stringify(medications));
-            
+
             hideAddModal();
-            
+
             // 薬箱画面を更新
             updateMedicationsList();
-            
+
             // 通知の設定（後で実装）
             scheduleNotifications(medication);
-            
+
             // 薬箱画面を表示
             showPage('medications');
         });
-        
+
         // 今日の服薬リストを更新
         function updateTodayMedications() {
             const container = document.getElementById('today-medications');
             container.innerHTML = '';
-            
+
             const now = new Date();
             const currentTime = now.getHours() * 60 + now.getMinutes();
-            
+
             // 設定された時間から現在の服用タイミングを判定
             const timeToMinutes = (timeStr) => {
                 const [hours, minutes] = timeStr.split(':').map(Number);
                 return hours * 60 + minutes;
             };
-            
+
             const morningMinutes = timeToMinutes(timeSettings.morning);
             const lunchMinutes = timeToMinutes(timeSettings.lunch);
             const dinnerMinutes = timeToMinutes(timeSettings.dinner);
             const bedtimeMinutes = timeToMinutes(timeSettings.bedtime);
-            
+
             let mealTime = '';
             if (currentTime >= morningMinutes - 60 && currentTime < lunchMinutes - 60) {
                 mealTime = '朝食後';
@@ -760,19 +766,19 @@
             } else if (currentTime >= bedtimeMinutes - 60 || currentTime < morningMinutes - 60) {
                 mealTime = '就寝前';
             }
-            
+
             // 飲み忘れチェック（各服用タイミングの1時間後からチェック）
             const missedDoses = [];
             const checkMissedDose = (timing, settingKey) => {
                 const targetTime = timeToMinutes(timeSettings[settingKey]);
                 const timeSinceDose = currentTime - targetTime;
-                
+
                 if (timeSinceDose > 60 && timeSinceDose < 240) { // 1時間後から4時間以内
                     medications.forEach(med => {
-                        const shouldTake = med.frequency === '毎食後' || 
-                                         med.frequency === timing ||
-                                         (med.frequency === '朝夕食後' && (timing === '朝食後' || timing === '夕食後'));
-                        
+                        const shouldTake = med.frequency === '毎食後' ||
+                            med.frequency === timing ||
+                            (med.frequency === '朝夕食後' && (timing === '朝食後' || timing === '夕食後'));
+
                         if (shouldTake && !isTakenToday(med.id, timing)) {
                             missedDoses.push({
                                 medication: med,
@@ -783,7 +789,7 @@
                     });
                 }
             };
-            
+
             // 今日の飲み忘れをチェック
             const todayDate = now.toDateString();
             const checkTiming = (timing, settingKey) => {
@@ -793,12 +799,12 @@
                     checkMissedDose(timing, settingKey);
                 }
             };
-            
+
             checkTiming('朝食後', 'morning');
             checkTiming('昼食後', 'lunch');
             checkTiming('夕食後', 'dinner');
             checkTiming('就寝前', 'bedtime');
-            
+
             // 飲み忘れカードを表示
             missedDoses.forEach(missed => {
                 const card = document.createElement('div');
@@ -811,26 +817,26 @@
                     <div class="missed-dose-info">
                         ${missed.timing} (${missed.missedTime}) - ${missed.medication.dosage}
                     </div>
-                    ${!isTakenToday(missed.medication.id, missed.timing) ? 
-                        `<button class="camera-button" onclick="showCameraModal(${missed.medication.id}, '${missed.timing}')" style="width: 100%; font-size: 16px; padding: 10px;">📸 写真で服用確認</button>` : 
+                    ${!isTakenToday(missed.medication.id, missed.timing) ?
+                        `<button class="camera-button" onclick="showCameraModal(${missed.medication.id}, '${missed.timing}')" style="width: 100%; font-size: 16px; padding: 10px;">📸 写真で服用確認</button>` :
                         `<button class="take-button taken" disabled>✓ 服用済み</button>`
                     }
                 `;
                 container.appendChild(card);
             });
-            
+
             // 現在の時間帯の服薬
             const todayMeds = medications.filter(med => {
-                return med.frequency === '毎食後' || 
-                       med.frequency === mealTime ||
-                       (med.frequency === '朝夕食後' && (mealTime === '朝食後' || mealTime === '夕食後'));
+                return med.frequency === '毎食後' ||
+                    med.frequency === mealTime ||
+                    (med.frequency === '朝夕食後' && (mealTime === '朝食後' || mealTime === '夕食後'));
             });
-            
+
             if (todayMeds.length === 0 && missedDoses.length === 0) {
                 container.innerHTML = '<p style="text-align: center; color: #666;">現在服用する薬はありません</p>';
                 return;
             }
-            
+
             todayMeds.forEach(med => {
                 const taken = isTakenToday(med.id, mealTime);
                 const card = document.createElement('div');
@@ -845,21 +851,21 @@
                 container.appendChild(card);
             });
         }
-        
+
         // 薬を服用（写真確認からのみ呼び出される）
         function takeMedication(medId, mealTime, photoVerified = false) {
             if (!photoVerified) {
                 alert('⚠️ 服用確認には写真が必要です');
                 return;
             }
-            
+
             const med = medications.find(m => m.id === medId);
             if (!med) return;
-            
+
             // 在庫を減らす
             med.stock -= 1;
             localStorage.setItem('medications', JSON.stringify(medications));
-            
+
             // 履歴に追加
             const historyItem = {
                 medicationId: medId,
@@ -871,107 +877,107 @@
             };
             history.push(historyItem);
             localStorage.setItem('history', JSON.stringify(history));
-            
+
             // UIを更新
             updateTodayMedications();
             checkStockWarnings();
         }
-        
+
         // 今日服用済みかチェック
         function isTakenToday(medId, mealTime) {
             const today = new Date().toDateString();
             return history.some(h => {
                 const takenDate = new Date(h.takenAt).toDateString();
-                return h.medicationId === medId && 
-                       takenDate === today && 
-                       h.mealTime === mealTime &&
-                       !h.cancelled; // 取り消されていない履歴のみ
+                return h.medicationId === medId &&
+                    takenDate === today &&
+                    h.mealTime === mealTime &&
+                    !h.cancelled; // 取り消されていない履歴のみ
             });
         }
-        
+
         // 服用記録の取り消し（ホーム画面から）
         function undoMedication(medId, mealTime) {
             if (!confirm('服用記録を取り消しますか？在庫が1つ戻ります。')) {
                 return;
             }
-            
+
             const today = new Date().toDateString();
             const historyItem = history.find(h => {
                 const takenDate = new Date(h.takenAt).toDateString();
-                return h.medicationId === medId && 
-                       takenDate === today && 
-                       h.mealTime === mealTime &&
-                       !h.cancelled;
+                return h.medicationId === medId &&
+                    takenDate === today &&
+                    h.mealTime === mealTime &&
+                    !h.cancelled;
             });
-            
+
             if (historyItem) {
                 // 履歴を取り消し済みにマーク
                 historyItem.cancelled = true;
                 historyItem.cancelledAt = new Date().toISOString();
-                
+
                 // 在庫を戻す
                 const med = medications.find(m => m.id === medId);
                 if (med) {
                     med.stock += 1;
                     localStorage.setItem('medications', JSON.stringify(medications));
                 }
-                
+
                 localStorage.setItem('history', JSON.stringify(history));
-                
+
                 // UIを更新
                 updateTodayMedications();
                 checkStockWarnings();
-                
+
                 alert('✅ 服用記録を取り消しました。在庫が1つ戻りました。');
             }
         }
-        
+
         // 履歴からの取り消し
         function undoHistoryItem(medId, takenAt, mealTime) {
             if (!confirm('この服用記録を取り消しますか？在庫が1つ戻ります。')) {
                 return;
             }
-            
-            const historyItem = history.find(h => 
-                h.medicationId === medId && 
-                h.takenAt === takenAt && 
+
+            const historyItem = history.find(h =>
+                h.medicationId === medId &&
+                h.takenAt === takenAt &&
                 h.mealTime === mealTime &&
                 !h.cancelled
             );
-            
+
             if (historyItem) {
                 // 履歴を取り消し済みにマーク
                 historyItem.cancelled = true;
                 historyItem.cancelledAt = new Date().toISOString();
-                
+
                 // 在庫を戻す
                 const med = medications.find(m => m.id === parseInt(medId));
                 if (med) {
                     med.stock += 1;
                     localStorage.setItem('medications', JSON.stringify(medications));
                 }
-                
+
                 localStorage.setItem('history', JSON.stringify(history));
-                
+
                 // UIを更新
                 updateTodayMedications();
                 updateHistoryList();
                 checkStockWarnings();
-                
+
                 alert('✅ 服用記録を取り消しました。在庫が1つ戻りました。');
             }
         }
-        
+
         // 在庫警告をチェック
         function checkStockWarnings() {
             const container = document.getElementById('stock-warnings');
             container.innerHTML = '';
-            
+
             const warnings = medications.filter(med => {
                 const threshold = med.alertThreshold || 7;
                 return med.stock <= threshold;
             });
-            
+
             if (warnings.length > 0) {
                 warnings.forEach(med => {
                     const warning = document.createElement('div');
@@ -981,17 +987,17 @@
                 });
             }
         }
-        
+
         // 薬リストを更新
         function updateMedicationsList() {
             const container = document.getElementById('medications-list');
             container.innerHTML = '';
-            
+
             if (medications.length === 0) {
                 container.innerHTML = '<p style="text-align: center; color: #666;">薬が登録されていません</p>';
                 return;
             }
-            
+
             medications.forEach(med => {
                 const card = document.createElement('div');
                 card.className = 'medication-card';
@@ -1008,25 +1014,25 @@
                 container.appendChild(card);
             });
         }
-        
+
         // 履歴を更新
         function updateHistoryList() {
             const container = document.getElementById('history-list');
             container.innerHTML = '';
-            
+
             if (history.length === 0) {
                 container.innerHTML = '<p style="text-align: center; color: #666;">服薬履歴がありません</p>';
                 return;
             }
-            
+
             // 取り消されていない履歴のみ表示
             const activeHistory = history.filter(h => !h.cancelled);
-            
+
             if (activeHistory.length === 0) {
                 container.innerHTML = '<p style="text-align: center; color: #666;">服薬履歴がありません</p>';
                 return;
             }
-            
+
             // 日付でグループ化
             const groupedHistory = {};
             activeHistory.slice().reverse().forEach(h => {
@@ -1036,7 +1042,7 @@
                 }
                 groupedHistory[date].push(h);
             });
-            
+
             Object.entries(groupedHistory).forEach(([date, items]) => {
                 const historyItem = document.createElement('div');
                 historyItem.className = 'history-item';
@@ -1044,39 +1050,39 @@
                     <div class="history-date">${date}</div>
                     <div class="history-meds">
                         ${items.map(item => {
-                            const photoIcon = item.photoVerified ? '📸' : '';
-                            const time = new Date(item.takenAt).toLocaleTimeString('ja-JP', {hour: '2-digit', minute: '2-digit'});
-                            return `
+                    const photoIcon = item.photoVerified ? '📸' : '';
+                    const time = new Date(item.takenAt).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+                    return `
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
                                     <span>${photoIcon} ${item.medicationName} (${item.mealTime}) - ${time}</span>
                                     <button class="cancel-button" onclick="undoHistoryItem('${item.medicationId}', '${item.takenAt}', '${item.mealTime}')" 
                                             style="padding: 2px 8px; font-size: 12px; margin-left: 10px;">🔄 取り消し</button>
                                 </div>
                             `;
-                        }).join('')}
+                }).join('')}
                     </div>
                 `;
                 container.appendChild(historyItem);
             });
         }
-        
+
         // 通知のスケジュール
         function scheduleNotifications(medication) {
             if ('Notification' in window && Notification.permission === 'default') {
                 Notification.requestPermission();
             }
-            
+
             // 服薬時間の通知をスケジュール
             setMedicationReminders(medication);
         }
-        
+
         // 服薬リマインダーの設定
         function setMedicationReminders(medication) {
             const frequency = medication.frequency;
             const times = [];
-            
+
             // 服用頻度に応じて通知時間を設定
-            switch(frequency) {
+            switch (frequency) {
                 case '毎食後':
                     times.push(timeSettings.morning, timeSettings.lunch, timeSettings.dinner);
                     break;
@@ -1096,27 +1102,27 @@
                     times.push(timeSettings.bedtime);
                     break;
             }
-            
+
             // 各時間に対して通知を設定
             times.forEach(time => {
                 scheduleNotificationAtTime(medication, time);
             });
         }
-        
+
         // 指定時間に通知を設定
         function scheduleNotificationAtTime(medication, timeString) {
             const [hours, minutes] = timeString.split(':').map(Number);
             const now = new Date();
             const scheduledTime = new Date();
             scheduledTime.setHours(hours, minutes, 0, 0);
-            
+
             // もし今日の時間が過ぎていたら明日に設定
             if (scheduledTime <= now) {
                 scheduledTime.setDate(scheduledTime.getDate() + 1);
             }
-            
+
             const timeUntilNotification = scheduledTime.getTime() - now.getTime();
-            
+
             setTimeout(() => {
                 showMedicationNotification(medication, timeString);
                 // 翌日以降も継続するため再スケジュール
@@ -1125,7 +1131,7 @@
                 }, 24 * 60 * 60 * 1000); // 24時間後
             }, timeUntilNotification);
         }
-        
+
         // 薬の通知を表示
         function showMedicationNotification(medication, time) {
             if ('Notification' in window && Notification.permission === 'granted') {
@@ -1146,21 +1152,21 @@
                         }
                     ]
                 });
-                
-                notification.onclick = function() {
+
+                notification.onclick = function () {
                     window.focus();
                     // ホーム画面を表示
                     showPage('home');
                     this.close();
                 };
-                
+
                 // 10秒後に自動で閉じる
                 setTimeout(() => {
                     notification.close();
                 }, 10000);
             }
         }
-        
+
         // 在庫切れ通知をチェック
         function checkLowStockNotifications() {
             medications.forEach(med => {
@@ -1169,7 +1175,7 @@
                     // 1日1回だけ通知（最後の通知から24時間経過していたら）
                     const lastNotified = localStorage.getItem(`lastStockNotify-${med.id}`);
                     const now = Date.now();
-                    
+
                     if (!lastNotified || (now - parseInt(lastNotified)) > 24 * 60 * 60 * 1000) {
                         showLowStockNotification(med);
                         localStorage.setItem(`lastStockNotify-${med.id}`, now.toString());
@@ -1177,7 +1183,7 @@
                 }
             });
         }
-        
+
         // 在庫切れ通知を表示
         function showLowStockNotification(medication) {
             if ('Notification' in window && Notification.permission === 'granted') {
@@ -1188,45 +1194,45 @@
                     tag: `stock-${medication.id}`,
                     requireInteraction: true
                 });
-                
-                notification.onclick = function() {
+
+                notification.onclick = function () {
                     window.focus();
                     showPage('medications');
                     this.close();
                 };
             }
         }
-        
+
         // 初期化
         updateTodayMedications();
         checkStockWarnings();
-        
+
         // Service Workerの登録
         if ('serviceWorker' in navigator) {
-            window.addEventListener('load', function() {
+            window.addEventListener('load', function () {
                 navigator.serviceWorker.register('sw.js')
-                    .then(function(registration) {
+                    .then(function (registration) {
                         console.log('Service Worker 登録成功:', registration.scope);
                     })
-                    .catch(function(error) {
+                    .catch(function (error) {
                         console.log('Service Worker 登録失敗:', error);
                     });
             });
         }
-        
+
         // 通知権限の要求
         if ('Notification' in window && Notification.permission === 'default') {
             Notification.requestPermission();
         }
-        
+
         // 既存の薬に対して通知をスケジュール
         medications.forEach(medication => {
             setMedicationReminders(medication);
         });
-        
+
         // 在庫切れ通知をチェック
         checkLowStockNotifications();
-        
+
         // インストールプロンプトの処理
         let deferredPrompt;
         window.addEventListener('beforeinstallprompt', (e) => {
@@ -1237,7 +1243,7 @@
             // インストールボタンを表示
             showInstallPrompt();
         });
-        
+
         function showInstallPrompt() {
             // インストールバナーを表示
             const installBanner = document.createElement('div');
@@ -1256,7 +1262,7 @@
             installBanner.innerHTML = '📱 ホーム画面に追加してアプリとして使用できます！';
             installBanner.onclick = installApp;
             document.body.appendChild(installBanner);
-            
+
             // 10秒後に自動で閉じる
             setTimeout(() => {
                 if (installBanner.parentNode) {
@@ -1264,7 +1270,7 @@
                 }
             }, 10000);
         }
-        
+
         function installApp() {
             if (deferredPrompt) {
                 // インストールプロンプトを表示
@@ -1280,12 +1286,12 @@
                 });
             }
         }
-        
+
         // カメラモーダル表示
         async function showCameraModal(medId, mealTime) {
             currentMedId = medId;
             currentMealTime = mealTime;
-            
+
             const modal = document.getElementById('camera-modal');
             const video = document.getElementById('camera-video');
             const capturedImage = document.getElementById('captured-image');
@@ -1293,7 +1299,7 @@
             const confirmBtn = document.getElementById('confirm-btn');
             const captureBtn = document.getElementById('capture-btn');
             const retakeBtn = document.getElementById('retake-btn');
-            
+
             // リセット
             capturedImage.style.display = 'none';
             video.style.display = 'block';
@@ -1301,9 +1307,9 @@
             confirmBtn.style.display = 'none';
             captureBtn.style.display = 'block';
             retakeBtn.style.display = 'none';
-            
+
             try {
-                cameraStream = await navigator.mediaDevices.getUserMedia({ 
+                cameraStream = await navigator.mediaDevices.getUserMedia({
                     video: { facingMode: 'environment' } // 背面カメラを優先
                 });
                 video.srcObject = cameraStream;
@@ -1313,22 +1319,22 @@
                 console.error('カメラエラー:', err);
             }
         }
-        
+
         // カメラモーダル非表示
         function hideCameraModal() {
             const modal = document.getElementById('camera-modal');
             modal.style.display = 'none';
-            
+
             // カメラストリームを停止
             if (cameraStream) {
                 cameraStream.getTracks().forEach(track => track.stop());
                 cameraStream = null;
             }
-            
+
             currentMedId = null;
             currentMealTime = null;
         }
-        
+
         // 写真撮影
         function capturePhoto() {
             const video = document.getElementById('camera-video');
@@ -1336,31 +1342,31 @@
             const capturedImage = document.getElementById('captured-image');
             const captureBtn = document.getElementById('capture-btn');
             const retakeBtn = document.getElementById('retake-btn');
-            
+
             // キャンバスのサイズを動画のサイズに設定
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
-            
+
             // 動画フレームをキャンバスに描画
             const ctx = canvas.getContext('2d');
             ctx.drawImage(video, 0, 0);
-            
+
             // キャンバスから画像データを取得
             const imageDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-            
+
             // 撮影した画像を表示
             capturedImage.src = imageDataUrl;
             capturedImage.style.display = 'block';
             video.style.display = 'none';
-            
+
             // ボタンの表示を切り替え
             captureBtn.style.display = 'none';
             retakeBtn.style.display = 'block';
-            
+
             // 画像解析を実行
             analyzeImage(imageDataUrl);
         }
-        
+
         // 撮り直し
         function retakePhoto() {
             const video = document.getElementById('camera-video');
@@ -1369,23 +1375,23 @@
             const retakeBtn = document.getElementById('retake-btn');
             const analysisResult = document.getElementById('analysis-result');
             const confirmBtn = document.getElementById('confirm-btn');
-            
+
             // 表示をリセット
             capturedImage.style.display = 'none';
             video.style.display = 'block';
             analysisResult.style.display = 'none';
             confirmBtn.style.display = 'none';
-            
+
             // ボタンの表示を切り替え
             captureBtn.style.display = 'block';
             retakeBtn.style.display = 'none';
         }
-        
+
         // 高度な画像解析
         async function analyzeImage(imageDataUrl) {
             const analysisResult = document.getElementById('analysis-result');
             const confirmBtn = document.getElementById('confirm-btn');
-            
+
             // 解析中の表示
             analysisResult.innerHTML = `
                 <div>
@@ -1400,36 +1406,36 @@
             `;
             analysisResult.className = 'analysis-result';
             analysisResult.style.display = 'block';
-            
+
             try {
                 // プログレスバーアニメーション
                 updateProgress(20);
-                
+
                 // 複数の画像認識を並行実行
                 const results = await Promise.allSettled([
                     analyzeWithComputerVision(imageDataUrl),
                     analyzeWithOpenAI(imageDataUrl),
                     analyzeWithLocalAI(imageDataUrl)
                 ]);
-                
+
                 updateProgress(80);
-                
+
                 // 結果を統合して最終判定
                 const finalResult = combineAnalysisResults(results);
-                
+
                 updateProgress(100);
-                
+
                 // 結果表示
                 setTimeout(() => {
                     displayAnalysisResult(finalResult, analysisResult, confirmBtn);
                 }, 500);
-                
+
             } catch (error) {
                 console.error('画像解析エラー:', error);
                 displayFallbackResult(analysisResult, confirmBtn);
             }
         }
-        
+
         // プログレスバー更新
         function updateProgress(percentage) {
             const progressBar = document.getElementById('progress-bar');
@@ -1437,31 +1443,31 @@
                 progressBar.style.width = percentage + '%';
             }
         }
-        
+
         // Google Vision API による高度解析
         async function analyzeWithComputerVision(imageDataUrl) {
             const config = API_CONFIGS.googleVision;
-            
+
             if (config.enabled && config.apiKey !== 'YOUR_GOOGLE_VISION_API_KEY') {
                 try {
                     const base64Image = imageDataUrl.split(',')[1];
-                    
+
                     const requestBody = {
                         requests: [{
                             image: { content: base64Image },
                             features: config.features
                         }]
                     };
-                    
+
                     const response = await fetch(`${config.endpoint}?key=${config.apiKey}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(requestBody)
                     });
-                    
+
                     const result = await response.json();
                     return analyzeGoogleVisionResult(result);
-                    
+
                 } catch (error) {
                     console.error('Google Vision API エラー:', error);
                     return fallbackLocalAnalysis(imageDataUrl, 'ComputerVision');
@@ -1471,25 +1477,25 @@
                 return fallbackLocalAnalysis(imageDataUrl, 'ComputerVision');
             }
         }
-        
+
         // Google Vision結果の解析
         function analyzeGoogleVisionResult(result) {
             if (!result.responses || !result.responses[0]) {
                 throw new Error('Invalid API response');
             }
-            
+
             const response = result.responses[0];
             const objects = response.localizedObjectAnnotations || [];
             const labels = response.labelAnnotations || [];
             const texts = response.textAnnotations || [];
-            
+
             // 薬関連オブジェクトの検出
             const medicationKeywords = ['pill', 'tablet', 'capsule', 'medication', 'medicine', 'drug', 'pharmaceutical'];
             const packagingKeywords = ['blister', 'pack', 'bottle', 'container', 'packaging'];
-            
+
             let medicationScore = 0;
             let emptyScore = 0;
-            
+
             // オブジェクト検出の分析
             objects.forEach(obj => {
                 const name = obj.name.toLowerCase();
@@ -1500,7 +1506,7 @@
                     emptyScore += obj.score * 0.5;
                 }
             });
-            
+
             // ラベルの分析
             labels.forEach(label => {
                 const description = label.description.toLowerCase();
@@ -1511,13 +1517,13 @@
                     emptyScore += label.score;
                 }
             });
-            
+
             // テキスト検出（薬名など）
             let hasText = texts.length > 1; // texts[0]は全体テキスト
-            
+
             const isEmpty = emptyScore > medicationScore || (medicationScore < 0.3 && !hasText);
             const confidence = Math.min((emptyScore + (1 - medicationScore)) * 100, 95);
-            
+
             return {
                 api: 'GoogleVision',
                 isEmpty: isEmpty,
@@ -1525,7 +1531,7 @@
                 details: `薬検出: ${Math.round(medicationScore * 100)}%, 空容器: ${Math.round(emptyScore * 100)}%`
             };
         }
-        
+
         // ローカル分析フォールバック
         async function fallbackLocalAnalysis(imageDataUrl, apiName) {
             return new Promise((resolve) => {
@@ -1533,30 +1539,30 @@
                     const canvas = document.createElement('canvas');
                     const ctx = canvas.getContext('2d');
                     const img = new Image();
-                    
-                    img.onload = function() {
+
+                    img.onload = function () {
                         canvas.width = img.width;
                         canvas.height = img.height;
                         ctx.drawImage(img, 0, 0);
-                        
+
                         // 画像の明度を分析
                         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
                         const brightness = calculateBrightness(imageData);
-                        
+
                         // エッジ密度の計算
                         const edgeDensity = calculateEdgeDensity(imageData);
-                        
+
                         // 色の均一性を計算
                         const colorUniformity = calculateColorUniformity(imageData);
-                        
+
                         // 総合判定（空のシートは明るく、エッジが少なく、色が均一）
-                        const emptyScore = (brightness / 255) * 0.4 + 
-                                         (1 - edgeDensity) * 0.3 + 
-                                         colorUniformity * 0.3;
-                        
+                        const emptyScore = (brightness / 255) * 0.4 +
+                            (1 - edgeDensity) * 0.3 +
+                            colorUniformity * 0.3;
+
                         const isEmpty = emptyScore > 0.6;
                         const confidence = Math.min(emptyScore * 100, 95);
-                        
+
                         resolve({
                             api: apiName,
                             isEmpty: isEmpty,
@@ -1564,41 +1570,41 @@
                             details: `明度: ${Math.round(brightness)}, エッジ密度: ${Math.round(edgeDensity * 100)}%, 均一性: ${Math.round(colorUniformity * 100)}%`
                         });
                     };
-                    
+
                     img.src = imageDataUrl;
                 }, 800);
             });
         }
-        
+
         // エッジ密度計算
         function calculateEdgeDensity(imageData) {
             const data = imageData.data;
             const width = imageData.width;
             const height = imageData.height;
             let edgeCount = 0;
-            
+
             for (let y = 1; y < height - 1; y++) {
                 for (let x = 1; x < width - 1; x++) {
                     const idx = (y * width + x) * 4;
                     const current = data[idx] + data[idx + 1] + data[idx + 2];
                     const right = data[idx + 4] + data[idx + 5] + data[idx + 6];
                     const bottom = data[idx + width * 4] + data[idx + width * 4 + 1] + data[idx + width * 4 + 2];
-                    
+
                     if (Math.abs(current - right) > 30 || Math.abs(current - bottom) > 30) {
                         edgeCount++;
                     }
                 }
             }
-            
+
             return edgeCount / ((width - 2) * (height - 2));
         }
-        
+
         // 色の均一性計算
         function calculateColorUniformity(imageData) {
             const data = imageData.data;
             let totalVariance = 0;
             let pixelCount = 0;
-            
+
             // 平均色を計算
             let avgR = 0, avgG = 0, avgB = 0;
             for (let i = 0; i < data.length; i += 4) {
@@ -1610,7 +1616,7 @@
             avgR /= pixelCount;
             avgG /= pixelCount;
             avgB /= pixelCount;
-            
+
             // 分散を計算
             for (let i = 0; i < data.length; i += 4) {
                 const varR = Math.pow(data[i] - avgR, 2);
@@ -1618,15 +1624,15 @@
                 const varB = Math.pow(data[i + 2] - avgB, 2);
                 totalVariance += (varR + varG + varB) / 3;
             }
-            
+
             const variance = totalVariance / pixelCount;
             return Math.max(0, 1 - (variance / 10000)); // 正規化
         }
-        
+
         // OpenAI Vision API (GPT-4V)
         async function analyzeWithOpenAI(imageDataUrl) {
             const config = API_CONFIGS.openaiVision;
-            
+
             if (config.enabled && config.apiKey !== 'YOUR_OPENAI_API_KEY') {
                 try {
                     const requestBody = {
@@ -1656,7 +1662,7 @@
                         ],
                         max_tokens: 300
                     };
-                    
+
                     const response = await fetch(config.endpoint, {
                         method: 'POST',
                         headers: {
@@ -1665,10 +1671,10 @@
                         },
                         body: JSON.stringify(requestBody)
                     });
-                    
+
                     const result = await response.json();
                     return parseOpenAIResult(result);
-                    
+
                 } catch (error) {
                     console.error('OpenAI Vision API エラー:', error);
                     return fallbackLocalAnalysis(imageDataUrl, 'OpenAI');
@@ -1677,13 +1683,13 @@
                 return fallbackLocalAnalysis(imageDataUrl, 'OpenAI');
             }
         }
-        
+
         // OpenAI結果の解析
         function parseOpenAIResult(result) {
             try {
                 const content = result.choices[0].message.content;
                 const jsonMatch = content.match(/\{[\s\S]*\}/);
-                
+
                 if (jsonMatch) {
                     const parsed = JSON.parse(jsonMatch[0]);
                     return {
@@ -1705,14 +1711,14 @@
                 };
             }
         }
-        
+
         // ローカルAI分析
         async function analyzeWithLocalAI(imageDataUrl) {
             return new Promise((resolve) => {
                 setTimeout(() => {
                     // 色分布ベースの判定
                     const colorAnalysis = analyzeColorDistribution(imageDataUrl);
-                    
+
                     resolve({
                         api: 'LocalAI',
                         isEmpty: colorAnalysis.whiteRatio > 0.6,
@@ -1722,70 +1728,70 @@
                 }, 600);
             });
         }
-        
+
         // 明度計算
         function calculateBrightness(imageData) {
             const data = imageData.data;
             let totalBrightness = 0;
-            
+
             for (let i = 0; i < data.length; i += 4) {
                 const r = data[i];
                 const g = data[i + 1];
                 const b = data[i + 2];
                 totalBrightness += (r + g + b) / 3;
             }
-            
+
             return totalBrightness / (data.length / 4);
         }
-        
+
         // エッジ検出（簡易版）
         function detectEdges(imageDataUrl) {
             // 実際の実装では、より複雑なエッジ検出アルゴリズムを使用
             return Math.floor(Math.random() * 100); // プレースホルダー
         }
-        
+
         // 色分布分析
         function analyzeColorDistribution(imageDataUrl) {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
             const img = new Image();
-            
+
             return new Promise((resolve) => {
-                img.onload = function() {
+                img.onload = function () {
                     canvas.width = 100; // サンプリング用に小さく
                     canvas.height = 100;
                     ctx.drawImage(img, 0, 0, 100, 100);
-                    
+
                     const imageData = ctx.getImageData(0, 0, 100, 100);
                     const data = imageData.data;
                     let whitePixels = 0;
-                    
+
                     for (let i = 0; i < data.length; i += 4) {
                         const r = data[i];
                         const g = data[i + 1];
                         const b = data[i + 2];
-                        
+
                         // 白っぽいピクセルの判定
                         if (r > 200 && g > 200 && b > 200) {
                             whitePixels++;
                         }
                     }
-                    
+
                     resolve({
                         whiteRatio: whitePixels / (data.length / 4)
                     });
                 };
-                
+
                 img.src = imageDataUrl;
             });
         }
-        
+
         // 解析結果の統合
         function combineAnalysisResults(results) {
             const validResults = results
                 .filter(result => result.status === 'fulfilled')
                 .map(result => result.value);
-            
+
             if (validResults.length === 0) {
                 return {
                     isEmpty: false,
@@ -1793,32 +1799,32 @@
                     message: 'AI解析に失敗しました'
                 };
             }
-            
+
             // 重み付き投票
             const weights = { ComputerVision: 0.5, OpenAI: 0.3, LocalAI: 0.2 };
             let weightedScore = 0;
             let totalWeight = 0;
-            
+
             validResults.forEach(result => {
                 const weight = weights[result.api] || 0.1;
                 weightedScore += (result.isEmpty ? 1 : 0) * weight * (result.confidence / 100);
                 totalWeight += weight;
             });
-            
+
             const finalScore = weightedScore / totalWeight;
             const isEmpty = finalScore > 0.6;
             const confidence = Math.round(finalScore * 100);
-            
+
             return {
                 isEmpty,
                 confidence,
                 results: validResults,
-                message: isEmpty ? 
+                message: isEmpty ?
                     `${validResults.length}つのAIエンジンが空の薬シートを確認` :
                     `${validResults.length}つのAIエンジンが薬の残存を検出`
             };
         }
-        
+
         // 結果表示
         function displayAnalysisResult(result, analysisResult, confirmBtn) {
             if (result.isEmpty && result.confidence > 60) {
@@ -1859,10 +1865,10 @@
                 analysisResult.className = 'analysis-result warning-message';
                 confirmBtn.style.display = 'none';
             }
-            
+
             analysisResult.style.display = 'block';
         }
-        
+
         // フォールバック結果
         function displayFallbackResult(analysisResult, confirmBtn) {
             analysisResult.innerHTML = `
@@ -1875,17 +1881,17 @@
             confirmBtn.style.display = 'block';
             analysisResult.style.display = 'block';
         }
-        
+
         // 服用確認
         function confirmMedication() {
             if (currentMedId && currentMealTime) {
                 const med = medications.find(m => m.id === currentMedId);
                 if (!med) return;
-                
+
                 // 在庫を減らす
                 med.stock -= 1;
                 localStorage.setItem('medications', JSON.stringify(medications));
-                
+
                 // 履歴に追加（写真確認済みフラグ付き）
                 const historyItem = {
                     medicationId: currentMedId,
@@ -1897,24 +1903,24 @@
                 };
                 history.push(historyItem);
                 localStorage.setItem('history', JSON.stringify(history));
-                
+
                 // UIを更新
                 updateTodayMedications();
                 checkStockWarnings();
-                
+
                 // モーダルを閉じる
                 hideCameraModal();
-                
+
                 // 成功メッセージ
                 alert('📸 写真で服用が確認されました！');
             }
         }
-        
+
         // カスタム用途入力の表示切り替え
         function toggleCustomPurpose() {
             const purposeSelect = document.getElementById('med-purpose');
             const customInput = document.getElementById('med-purpose-custom');
-            
+
             if (purposeSelect.value === 'other') {
                 customInput.style.display = 'block';
                 customInput.required = true;
@@ -1924,35 +1930,35 @@
                 customInput.value = '';
             }
         }
-        
+
         // 用途の値を取得
         function getPurposeValue() {
             const purposeSelect = document.getElementById('med-purpose');
             const customInput = document.getElementById('med-purpose-custom');
-            
+
             if (purposeSelect.value === 'other') {
                 return customInput.value;
             } else {
                 return purposeSelect.value;
             }
         }
-        
+
         // 薬編集モーダルを表示
         function showEditModal(medId) {
             const med = medications.find(m => m.id === medId);
             if (!med) return;
-            
+
             document.getElementById('edit-med-id').value = med.id;
             document.getElementById('edit-med-name').value = med.name;
             document.getElementById('edit-med-dosage').value = med.dosage;
             document.getElementById('edit-med-frequency').value = med.frequency;
             document.getElementById('edit-med-stock').value = med.stock;
             document.getElementById('edit-med-alert-threshold').value = med.alertThreshold || 7;
-            
+
             // 用途の設定
             const purposeSelect = document.getElementById('edit-med-purpose');
             const customInput = document.getElementById('edit-med-purpose-custom');
-            
+
             if (med.purpose && !Array.from(purposeSelect.options).find(opt => opt.value === med.purpose)) {
                 purposeSelect.value = 'other';
                 customInput.style.display = 'block';
@@ -1962,21 +1968,21 @@
                 customInput.style.display = 'none';
                 customInput.value = '';
             }
-            
+
             document.getElementById('edit-modal').style.display = 'block';
         }
-        
+
         // 薬編集モーダルを非表示
         function hideEditModal() {
             document.getElementById('edit-modal').style.display = 'none';
             document.getElementById('edit-medication-form').reset();
         }
-        
+
         // 編集時のカスタム用途入力の表示切り替え
         function toggleEditCustomPurpose() {
             const purposeSelect = document.getElementById('edit-med-purpose');
             const customInput = document.getElementById('edit-med-purpose-custom');
-            
+
             if (purposeSelect.value === 'other') {
                 customInput.style.display = 'block';
                 customInput.required = true;
@@ -1986,26 +1992,26 @@
                 customInput.value = '';
             }
         }
-        
+
         // 編集時の用途の値を取得
         function getEditPurposeValue() {
             const purposeSelect = document.getElementById('edit-med-purpose');
             const customInput = document.getElementById('edit-med-purpose-custom');
-            
+
             if (purposeSelect.value === 'other') {
                 return customInput.value;
             } else {
                 return purposeSelect.value;
             }
         }
-        
+
         // 薬情報の編集
-        document.getElementById('edit-medication-form').addEventListener('submit', function(e) {
+        document.getElementById('edit-medication-form').addEventListener('submit', function (e) {
             e.preventDefault();
-            
+
             const medId = parseInt(document.getElementById('edit-med-id').value);
             const medIndex = medications.findIndex(m => m.id === medId);
-            
+
             if (medIndex !== -1) {
                 medications[medIndex] = {
                     ...medications[medIndex],
@@ -2016,32 +2022,32 @@
                     alertThreshold: parseInt(document.getElementById('edit-med-alert-threshold').value) || 7,
                     purpose: getEditPurposeValue()
                 };
-                
+
                 localStorage.setItem('medications', JSON.stringify(medications));
-                
+
                 hideEditModal();
                 updateMedicationsList();
-                
+
                 // 通知スケジュールを再設定
                 setMedicationReminders(medications[medIndex]);
-                
+
                 alert('✅ 薬情報を更新しました');
             }
         });
-        
+
         // 薬の削除
         function deleteMedication(medId) {
             if (!confirm('本当にこの薬を削除しますか？')) {
                 return;
             }
-            
+
             medications = medications.filter(m => m.id !== medId);
             localStorage.setItem('medications', JSON.stringify(medications));
-            
+
             updateMedicationsList();
             alert('✅ 薬を削除しました');
         }
-        
+
         // 定期的に画面を更新（1分ごと）
         setInterval(() => {
             if (document.getElementById('home-page').classList.contains('active')) {
@@ -2053,4 +2059,5 @@
         }, 60000);
     </script>
 </body>
+
 </html>
