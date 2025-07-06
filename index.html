@@ -535,6 +535,28 @@
                 </div>
             </div>
             
+            <!-- 時間設定 -->
+            <div class="medication-card">
+                <h3>⏰ 食事時間の設定</h3>
+                <p style="color: #666; margin-bottom: 15px;">毎食後の服薬時間を設定できます</p>
+                <div class="form-group">
+                    <label for="breakfast-time">朝食後の時間</label>
+                    <input type="time" id="breakfast-time" value="09:00" onchange="saveMealTimeSettings()">
+                </div>
+                <div class="form-group">
+                    <label for="lunch-time">昼食後の時間</label>
+                    <input type="time" id="lunch-time" value="13:00" onchange="saveMealTimeSettings()">
+                </div>
+                <div class="form-group">
+                    <label for="dinner-time">夕食後の時間</label>
+                    <input type="time" id="dinner-time" value="19:00" onchange="saveMealTimeSettings()">
+                </div>
+                <div class="form-group">
+                    <label for="bedtime">就寝前の時間</label>
+                    <input type="time" id="bedtime" value="22:00" onchange="saveMealTimeSettings()">
+                </div>
+            </div>
+            
             <!-- ローカルデータ管理 -->
             <div class="medication-card">
                 <h3>💾 ローカルデータ管理</h3>
@@ -606,6 +628,23 @@
                     <input type="text" id="med-name" required>
                 </div>
                 <div class="form-group">
+                    <label for="med-purpose">薬の用途</label>
+                    <select id="med-purpose-select" onchange="toggleCustomPurpose()" style="width: 100%;">
+                        <option value="">選択してください</option>
+                        <option value="頭痛・解熱">頭痛・解熱</option>
+                        <option value="胃腸薬">胃腸薬</option>
+                        <option value="風邪薬">風邪薬</option>
+                        <option value="アレルギー">アレルギー</option>
+                        <option value="ビタミン・サプリメント">ビタミン・サプリメント</option>
+                        <option value="高血圧">高血圧</option>
+                        <option value="糖尿病">糖尿病</option>
+                        <option value="抗生物質">抗生物質</option>
+                        <option value="睡眠薬">睡眠薬</option>
+                        <option value="custom">その他（自由記入）</option>
+                    </select>
+                    <input type="text" id="med-purpose-custom" placeholder="薬の用途を入力" style="display: none; margin-top: 10px; width: 100%;">
+                </div>
+                <div class="form-group">
                     <label for="med-dosage">用量（1回あたり）</label>
                     <div style="display: flex; gap: 10px;">
                         <select id="med-dosage-number" required style="flex: 1;">
@@ -649,15 +688,22 @@
                 </div>
                 <div class="form-group">
                     <label for="med-alert-threshold">在庫警告しきい値</label>
-                    <select id="med-alert-threshold" required>
-                        <option value="3">残り3個</option>
-                        <option value="5">残り5個</option>
-                        <option value="7" selected>残り7個</option>
-                        <option value="10">残り10個</option>
-                        <option value="14">残り14個</option>
-                        <option value="21">残り21個</option>
-                        <option value="30">残り30個</option>
-                    </select>
+                    <div style="display: flex; gap: 10px;">
+                        <select id="med-alert-threshold-select" onchange="toggleCustomThreshold()" style="flex: 1;">
+                            <option value="1">残り1個</option>
+                            <option value="2">残り2個</option>
+                            <option value="3">残り3個</option>
+                            <option value="4">残り4個</option>
+                            <option value="5">残り5個</option>
+                            <option value="6">残り6個</option>
+                            <option value="7" selected>残り7個</option>
+                            <option value="8">残り8個</option>
+                            <option value="9">残り9個</option>
+                            <option value="10">残り10個</option>
+                            <option value="custom">その他（直接入力）</option>
+                        </select>
+                        <input type="number" id="med-alert-threshold-custom" placeholder="個数を入力" min="1" style="display: none; width: 100px;">
+                    </div>
                 </div>
                 <div class="form-buttons">
                     <button type="submit" class="save-button">保存</button>
@@ -778,6 +824,11 @@
             // 選択されたページを表示
             document.getElementById(pageName + '-page').classList.add('active');
             
+            // 設定ページを表示する際に時間設定を読み込む
+            if (pageName === 'settings') {
+                loadMealTimeSettings();
+            }
+            
             // 選択されたタブをアクティブ
             event.target.closest('.tab').classList.add('active');
             
@@ -805,6 +856,39 @@
             modal.dataset.editId = '';
             document.getElementById('add-medication-form').reset();
             document.querySelector('#add-modal h3').textContent = '新しい薬を追加';
+            // カスタム入力をリセット
+            document.getElementById('med-purpose-custom').style.display = 'none';
+            document.getElementById('med-purpose-custom').required = false;
+        }
+        
+        // 薬の用途のカスタム入力切り替え
+        function toggleCustomPurpose() {
+            const select = document.getElementById('med-purpose-select');
+            const customInput = document.getElementById('med-purpose-custom');
+            
+            if (select.value === 'custom') {
+                customInput.style.display = 'block';
+                customInput.required = true;
+            } else {
+                customInput.style.display = 'none';
+                customInput.required = false;
+                customInput.value = '';
+            }
+        }
+        
+        // 在庫警告しきい値のカスタム入力切り替え
+        function toggleCustomThreshold() {
+            const select = document.getElementById('med-alert-threshold-select');
+            const customInput = document.getElementById('med-alert-threshold-custom');
+            
+            if (select.value === 'custom') {
+                customInput.style.display = 'block';
+                customInput.required = true;
+            } else {
+                customInput.style.display = 'none';
+                customInput.required = false;
+                customInput.value = '';
+            }
         }
         
         // 薬の追加/編集
@@ -815,12 +899,24 @@
             const dosageUnit = document.getElementById('med-dosage-unit').value;
             const editId = document.getElementById('add-modal').dataset.editId;
             
+            // 薬の用途を取得
+            const purposeSelect = document.getElementById('med-purpose-select').value;
+            const purposeCustom = document.getElementById('med-purpose-custom').value;
+            const purpose = purposeSelect === 'custom' ? purposeCustom : purposeSelect;
+            
+            // 在庫警告しきい値を取得
+            const thresholdSelect = document.getElementById('med-alert-threshold-select').value;
+            const thresholdCustom = document.getElementById('med-alert-threshold-custom').value;
+            const alertThreshold = thresholdSelect === 'custom' ? 
+                parseInt(thresholdCustom) : parseInt(thresholdSelect);
+            
             const medicationData = {
                 name: document.getElementById('med-name').value,
                 dosage: dosageNumber + dosageUnit,
                 frequency: document.getElementById('med-frequency').value,
                 stock: parseInt(document.getElementById('med-stock').value),
-                alertThreshold: parseInt(document.getElementById('med-alert-threshold').value)
+                alertThreshold: alertThreshold || 7,
+                purpose: purpose || '' // 薬の用途を追加
             };
             
             if (editId) {
@@ -851,27 +947,153 @@
             showPage('medications');
         });
         
+        // 食事時間設定を保存
+        function saveMealTimeSettings() {
+            const settings = {
+                breakfast: document.getElementById('breakfast-time').value,
+                lunch: document.getElementById('lunch-time').value,
+                dinner: document.getElementById('dinner-time').value,
+                bedtime: document.getElementById('bedtime').value
+            };
+            localStorage.setItem('mealTimeSettings', JSON.stringify(settings));
+        }
+        
+        // 食事時間設定を読み込み
+        function loadMealTimeSettings() {
+            const saved = localStorage.getItem('mealTimeSettings');
+            if (saved) {
+                const settings = JSON.parse(saved);
+                document.getElementById('breakfast-time').value = settings.breakfast || '09:00';
+                document.getElementById('lunch-time').value = settings.lunch || '13:00';
+                document.getElementById('dinner-time').value = settings.dinner || '19:00';
+                document.getElementById('bedtime').value = settings.bedtime || '22:00';
+            }
+        }
+        
+        // 現在の食事時間を取得
+        function getCurrentMealTime() {
+            const now = new Date();
+            const currentTime = now.getHours() * 60 + now.getMinutes();
+            
+            const saved = localStorage.getItem('mealTimeSettings');
+            let settings = {
+                breakfast: '09:00',
+                lunch: '13:00',
+                dinner: '19:00',
+                bedtime: '22:00'
+            };
+            
+            if (saved) {
+                settings = JSON.parse(saved);
+            }
+            
+            // 時間を分に変換
+            const toMinutes = (timeStr) => {
+                const [h, m] = timeStr.split(':').map(Number);
+                return h * 60 + m;
+            };
+            
+            const breakfastTime = toMinutes(settings.breakfast);
+            const lunchTime = toMinutes(settings.lunch);
+            const dinnerTime = toMinutes(settings.dinner);
+            const bedtimeTime = toMinutes(settings.bedtime);
+            
+            // 各食事時間の前後1時間を服薬時間とする
+            if (currentTime >= breakfastTime - 60 && currentTime < breakfastTime + 60) return '朝食後';
+            else if (currentTime >= lunchTime - 60 && currentTime < lunchTime + 60) return '昼食後';
+            else if (currentTime >= dinnerTime - 60 && currentTime < dinnerTime + 60) return '夕食後';
+            else if (currentTime >= bedtimeTime - 60 || currentTime < 360) return '就寝前'; // 360 = 6:00 AM
+            
+            return '';
+        }
+        
         // 今日の服薬リストを更新
         function updateTodayMedications() {
             const container = document.getElementById('today-medications');
             container.innerHTML = '';
             
+            const mealTime = getCurrentMealTime();
             const now = new Date();
-            const hour = now.getHours();
-            let mealTime = '';
+            const currentTime = now.getHours() * 60 + now.getMinutes();
             
-            if (hour >= 6 && hour < 10) mealTime = '朝食後';
-            else if (hour >= 11 && hour < 14) mealTime = '昼食後';
-            else if (hour >= 17 && hour < 21) mealTime = '夕食後';
-            else if (hour >= 21) mealTime = '就寝前';
+            // 時間設定を取得
+            const saved = localStorage.getItem('mealTimeSettings');
+            let settings = {
+                breakfast: '09:00',
+                lunch: '13:00',
+                dinner: '19:00',
+                bedtime: '22:00'
+            };
+            if (saved) {
+                settings = JSON.parse(saved);
+            }
             
+            // 各食事時間を分に変換
+            const toMinutes = (timeStr) => {
+                const [h, m] = timeStr.split(':').map(Number);
+                return h * 60 + m;
+            };
+            
+            const mealTimes = {
+                '朝食後': toMinutes(settings.breakfast),
+                '昼食後': toMinutes(settings.lunch),
+                '夕食後': toMinutes(settings.dinner),
+                '就寝前': toMinutes(settings.bedtime)
+            };
+            
+            // 過去2時間以内に服用すべきだった薬を取得
+            const overdueWarnings = [];
+            for (const [meal, time] of Object.entries(mealTimes)) {
+                if (currentTime >= time + 120) { // 2時間以上経過
+                    const overdueMeds = medications.filter(med => {
+                        return (med.frequency === '毎食後' || 
+                               med.frequency === meal ||
+                               (med.frequency === '朝夕食後' && (meal === '朝食後' || meal === '夕食後'))) &&
+                               !isTakenToday(med.id, meal);
+                    });
+                    overdueWarnings.push(...overdueMeds.map(med => ({...med, mealTime: meal})));
+                }
+            }
+            
+            // 遅延警告を表示
+            if (overdueWarnings.length > 0) {
+                const warningDiv = document.createElement('div');
+                warningDiv.className = 'warning-message';
+                warningDiv.style.marginBottom = '20px';
+                warningDiv.innerHTML = '<strong>⚠️ 服用時間を過ぎています</strong>';
+                container.appendChild(warningDiv);
+                
+                overdueWarnings.forEach(warning => {
+                    const card = document.createElement('div');
+                    card.className = 'medication-card';
+                    card.style.border = '2px solid #ff9800';
+                    card.innerHTML = `
+                        <div class="medication-name">${warning.name} - ${warning.mealTime}</div>
+                        <div class="medication-info" style="color: #ff6b6b;">服用時間から2時間以上経過</div>
+                        <div class="medication-info">${warning.dosage} - ${warning.frequency}</div>
+                        ${warning.purpose ? `<div class="medication-info">用途: ${warning.purpose}</div>` : ''}
+                        <div class="medication-info">在庫: ${warning.stock}個</div>
+                        <button class="take-button" 
+                                onclick="showCameraModal(${warning.id}, '${warning.mealTime}')"
+                                style="background: #ff9800;">
+                            📸 今すぐ服用する
+                        </button>
+                    `;
+                    container.appendChild(card);
+                });
+                
+                // 遅延警告の通知を送信
+                checkOverdueNotifications(overdueWarnings);
+            }
+            
+            // 現在の服用時間の薬を表示
             const todayMeds = medications.filter(med => {
                 return med.frequency === '毎食後' || 
                        med.frequency === mealTime ||
                        (med.frequency === '朝夕食後' && (mealTime === '朝食後' || mealTime === '夕食後'));
             });
             
-            if (todayMeds.length === 0) {
+            if (todayMeds.length === 0 && overdueWarnings.length === 0) {
                 container.innerHTML = '<p style="text-align: center; color: #666;">現在服用する薬はありません</p>';
                 return;
             }
@@ -883,6 +1105,7 @@
                 card.innerHTML = `
                     <div class="medication-name">${med.name}</div>
                     <div class="medication-info">${med.dosage} - ${med.frequency}</div>
+                    ${med.purpose ? `<div class="medication-info">用途: ${med.purpose}</div>` : ''}
                     <div class="medication-info">在庫: ${med.stock}個</div>
                     <button class="take-button ${taken ? 'taken' : ''}" 
                             onclick="showCameraModal(${med.id}, '${mealTime}')"
@@ -1019,6 +1242,7 @@
                 card.innerHTML = `
                     <div class="medication-name">${med.name}</div>
                     <div class="medication-info">${med.dosage} - ${med.frequency}</div>
+                    ${med.purpose ? `<div class="medication-info">用途: ${med.purpose}</div>` : ''}
                     <div class="medication-info">在庫: ${med.stock}個 (警告: ${med.alertThreshold || 7}個)</div>
                     <div style="margin-top: 10px;">
                         <button onclick="editMedication(${med.id})" style="padding: 5px 10px; margin-right: 5px; background: #2196F3; color: white; border: none; border-radius: 3px; cursor: pointer;">✏️ 編集</button>
@@ -1100,6 +1324,28 @@
             
             // 服薬時間の通知をスケジュール
             setMedicationReminders(medication);
+        }
+        
+        // 遅延警告の通知をチェック
+        function checkOverdueNotifications(overdueWarnings) {
+            if ('Notification' in window && Notification.permission === 'granted') {
+                overdueWarnings.forEach(warning => {
+                    const notificationKey = `overdue-${warning.id}-${warning.mealTime}-${new Date().toDateString()}`;
+                    
+                    // 今日既に通知を送信したかチェック
+                    if (!localStorage.getItem(notificationKey)) {
+                        new Notification('⚠️ 服用時間を過ぎています', {
+                            body: `${warning.name}（${warning.mealTime}）を服用してください`,
+                            icon: '/icon-192x192.png',
+                            tag: notificationKey,
+                            requireInteraction: true
+                        });
+                        
+                        // 通知送信済みとして記録
+                        localStorage.setItem(notificationKey, 'sent');
+                    }
+                });
+            }
         }
         
         // 服薬リマインダーの設定
@@ -1612,6 +1858,10 @@
                 
                 // 成功メッセージ
                 alert('📸 服用が記録されました！');
+                
+                // 履歴ページに移動
+                showPage('history');
+                updateHistoryList();
             }
         }
         
@@ -1691,7 +1941,38 @@
             
             document.getElementById('med-frequency').value = med.frequency;
             document.getElementById('med-stock').value = med.stock;
-            document.getElementById('med-alert-threshold').value = med.alertThreshold || 7;
+            
+            // 在庫警告しきい値を設定
+            const threshold = med.alertThreshold || 7;
+            if (threshold >= 1 && threshold <= 10) {
+                document.getElementById('med-alert-threshold-select').value = threshold.toString();
+                document.getElementById('med-alert-threshold-custom').style.display = 'none';
+                document.getElementById('med-alert-threshold-custom').required = false;
+            } else {
+                document.getElementById('med-alert-threshold-select').value = 'custom';
+                document.getElementById('med-alert-threshold-custom').value = threshold;
+                document.getElementById('med-alert-threshold-custom').style.display = 'block';
+                document.getElementById('med-alert-threshold-custom').required = true;
+            }
+            
+            // 用途を設定
+            if (med.purpose) {
+                const standardPurposes = ['頭痛・解熱', '胃腸薬', '風邪薬', 'アレルギー', 'ビタミン・サプリメント', '高血圧', '糖尿病', '抗生物質', '睡眠薬'];
+                if (standardPurposes.includes(med.purpose)) {
+                    document.getElementById('med-purpose-select').value = med.purpose;
+                    document.getElementById('med-purpose-custom').style.display = 'none';
+                    document.getElementById('med-purpose-custom').required = false;
+                } else {
+                    document.getElementById('med-purpose-select').value = 'custom';
+                    document.getElementById('med-purpose-custom').value = med.purpose;
+                    document.getElementById('med-purpose-custom').style.display = 'block';
+                    document.getElementById('med-purpose-custom').required = true;
+                }
+            } else {
+                document.getElementById('med-purpose-select').value = '';
+                document.getElementById('med-purpose-custom').style.display = 'none';
+                document.getElementById('med-purpose-custom').required = false;
+            }
             
             // 編集モードでモーダルを表示
             document.getElementById('add-modal').style.display = 'block';
