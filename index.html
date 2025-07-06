@@ -1125,7 +1125,12 @@
                         
                         // 登録日当日の場合は、登録時刻以降の服用時間のみ対象
                         if (registeredAt.toDateString() === today.toDateString()) {
-                            return nextMedTime.nextTimes.some(nt => nt.mealName === meal);
+                            // 登録時刻以降の服用時間リストに含まれている食事時間のみ対象
+                            const isInNextTimes = nextMedTime.nextTimes.some(nt => nt.mealName === meal);
+                            // さらに、登録時刻より後の服用時間のみ対象
+                            const mealTimeMinutes = time;
+                            const registeredTimeMinutes = registeredAt.getHours() * 60 + registeredAt.getMinutes();
+                            return isInNextTimes && mealTimeMinutes > registeredTimeMinutes;
                         }
                         
                         return true;
