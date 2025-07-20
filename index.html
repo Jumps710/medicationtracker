@@ -701,12 +701,12 @@
                 <div style="background: #d4edda; border: 1px solid #c3e6cb; padding: 10px; border-radius: 5px; margin-bottom: 10px;">
                     <strong>認証サービス状況:</strong>
                     <ul style="margin: 5px 0; padding-left: 20px; font-size: 14px;">
-                        <li id="google-oauth-status">🔍 Google OAuth: <span style="color: #6c757d;">読み込み中...</span></li>
+                        <li id="google-oauth-status">🔍 Firebase Google OAuth: <span style="color: #6c757d;">読み込み中...</span></li>
                         <li id="apple-oauth-status">🍎 Apple Sign In: <span style="color: #ffc107;">読み込み中...</span></li>
                     </ul>
                 </div>
                 <div style="font-size: 12px; color: #666;">
-                    <strong>Firebase クライアントID:</strong> FirebaseコンソールでOAuth設定を確認してください。
+                    <strong>Firebase SDK使用:</strong> Firebase Console の承認済みドメイン設定のみで動作します。
                 </div>
             </div>
             
@@ -2742,11 +2742,18 @@
         // 広告マネージャーの初期化
         const adManager = new AdManager();
 
-        // OAuth認証システム
+        // Firebase OAuth認証システム
         class OAuthManager {
             constructor() {
-                // Firebase Console > Authentication > Sign-in method > Google > Web SDK configuration から取得
-                this.googleClientId = '112454739779-gr9tqbctejcsr3td2hrmcbe4qobhagjd.apps.googleusercontent.com';
+                // Firebase設定 - Firebase Console > Project Settings > General > Your apps から取得
+                this.firebaseConfig = {
+                    apiKey: "YOUR_API_KEY",  // Firebase Console から取得してください
+                    authDomain: "medication-tracker.firebaseapp.com",
+                    projectId: "medication-tracker", 
+                    storageBucket: "medication-tracker.appspot.com",
+                    messagingSenderId: "112454739779",
+                    appId: "YOUR_APP_ID"  // Firebase Console から取得してください
+                };
                 
                 // Apple Developer Program で設定した Service ID
                 this.appleClientId = 'com.medicationtracker.signin';
@@ -2755,43 +2762,49 @@
             }
 
             async init() {
-                // Google Sign-In API の初期化
-                await this.loadGoogleAPI();
+                // Firebase SDK の初期化
+                await this.loadFirebaseSDK();
                 // Apple Sign-In API の初期化
                 await this.loadAppleAPI();
             }
 
-            async loadGoogleAPI() {
+            async loadFirebaseSDK() {
                 return new Promise((resolve) => {
-                    // Google Sign-In API のスクリプトローディング
-                    if (window.google && window.google.accounts) {
+                    // Firebase SDK のスクリプトローディング
+                    if (window.firebase) {
                         resolve();
                         return;
                     }
                     
+                    // Firebase v9 SDK (モジュラー版) をCDNから読み込み
                     const script = document.createElement('script');
-                    script.src = 'https://accounts.google.com/gsi/client';
-                    script.onload = () => {
-                        if (window.google && window.google.accounts) {
-                            try {
-                                window.google.accounts.id.initialize({
-                                    client_id: this.googleClientId,
-                                    callback: this.handleGoogleSignIn.bind(this),
-                                    ux_mode: 'popup',
-                                    cancel_on_tap_outside: false
-                                });
-                                console.log('Google Sign-In API初期化完了');
-                            } catch (error) {
-                                console.error('Google Sign-In API初期化エラー:', error);
-                            }
-                        }
-                        resolve();
-                    };
-                    script.onerror = () => {
-                        console.error('Google Sign-In APIの読み込みに失敗しました');
-                        resolve();
-                    };
+                    script.type = 'module';
+                    script.innerHTML = `
+                        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
+                        import { getAuth, signInWithPopup, GoogleAuthProvider } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
+                        
+                        // Firebase初期化
+                        const firebaseConfig = ${JSON.stringify(this.firebaseConfig)};
+                        window.firebaseApp = initializeApp(firebaseConfig);
+                        window.firebaseAuth = getAuth(window.firebaseApp);
+                        window.GoogleAuthProvider = GoogleAuthProvider;
+                        window.signInWithPopup = signInWithPopup;
+                        
+                        console.log('Firebase SDK初期化完了');
+                        window.firebaseReady = true;
+                    `;
+                    
                     document.head.appendChild(script);
+                    
+                    // 初期化完了を待機
+                    const checkReady = () => {
+                        if (window.firebaseReady) {
+                            resolve();
+                        } else {
+                            setTimeout(checkReady, 100);
+                        }
+                    };
+                    checkReady();
                 });
             }
 
@@ -2832,68 +2845,41 @@
 
             async signInWithGoogle() {
                 try {
-                    if (!window.google || !window.google.accounts) {
-                        throw new Error('Google Sign-In APIが読み込まれていません');
+                    if (!window.firebaseReady || !window.firebaseAuth) {
+                        throw new Error('Firebase SDKが読み込まれていません');
                     }
 
-                    // Google Sign-In ポップアップを表示
-                    window.google.accounts.id.prompt((notification) => {
-                        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-                            console.log('Google Sign-In プロンプトが表示されませんでした:', notification.getNotDisplayedReason());
-                            // 手動でワンタップサインインボタンを表示
-                            this.renderGoogleSignInButton();
-                        }
-                    });
+                    // Firebase Google認証プロバイダーを作成
+                    const provider = new window.GoogleAuthProvider();
+                    
+                    // Firebase認証でポップアップサインイン
+                    const result = await window.signInWithPopup(window.firebaseAuth, provider);
+                    
+                    // 認証成功時の処理
+                    const user = result.user;
+                    const userData = {
+                        id: user.uid,
+                        email: user.email,
+                        name: user.displayName,
+                        picture: user.photoURL,
+                        provider: 'google'
+                    };
+                    
+                    this.processOAuthSignIn(userData);
+                    
                 } catch (error) {
-                    console.error('Google Sign-In エラー:', error);
-                    // エラー時は手動サインインボタンを表示
-                    this.renderGoogleSignInButton();
+                    console.error('Firebase Google Sign-In エラー:', error);
+                    
+                    if (error.code === 'auth/popup-closed-by-user') {
+                        console.log('ユーザーがサインインをキャンセルしました');
+                    } else if (error.code === 'auth/popup-blocked') {
+                        alert('ポップアップがブロックされました。ポップアップを許可してください。');
+                    } else {
+                        alert('Google認証でエラーが発生しました: ' + error.message);
+                    }
                 }
             }
 
-
-            renderGoogleSignInButton() {
-                if (!window.google || !window.google.accounts) return;
-
-                // 一時的なサインインボタンを作成
-                const tempDiv = document.createElement('div');
-                tempDiv.id = 'google-signin-temp';
-                tempDiv.style.cssText = `
-                    position: fixed;
-                    top: 50%;
-                    left: 50%;
-                    transform: translate(-50%, -50%);
-                    z-index: 10000;
-                    background: white;
-                    padding: 20px;
-                    border-radius: 10px;
-                    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-                `;
-                
-                const closeBtn = document.createElement('button');
-                closeBtn.textContent = '×';
-                closeBtn.style.cssText = `
-                    position: absolute;
-                    top: 5px;
-                    right: 10px;
-                    border: none;
-                    background: none;
-                    font-size: 20px;
-                    cursor: pointer;
-                `;
-                closeBtn.onclick = () => document.body.removeChild(tempDiv);
-                
-                tempDiv.appendChild(closeBtn);
-                document.body.appendChild(tempDiv);
-
-                // Google サインインボタンをレンダリング
-                window.google.accounts.id.renderButton(tempDiv, {
-                    theme: 'outline',
-                    size: 'large',
-                    text: 'signin_with',
-                    locale: 'ja'
-                });
-            }
 
             async signInWithApple() {
                 try {
@@ -2915,24 +2901,6 @@
                 }
             }
 
-            handleGoogleSignIn(response) {
-                try {
-                    // JWTトークンをデコード
-                    const payload = JSON.parse(atob(response.credential.split('.')[1]));
-                    
-                    const userData = {
-                        id: payload.sub,
-                        email: payload.email,
-                        name: payload.name,
-                        picture: payload.picture,
-                        provider: 'google'
-                    };
-                    
-                    this.processOAuthSignIn(userData);
-                } catch (error) {
-                    console.error('Google Sign-In レスポンス処理エラー:', error);
-                }
-            }
 
             handleAppleSignIn(response) {
                 try {
@@ -3383,10 +3351,10 @@
             const appleStatus = document.getElementById('apple-oauth-status');
             
             if (googleStatus) {
-                const isGoogleReady = window.google && window.google.accounts;
-                googleStatus.innerHTML = isGoogleReady 
-                    ? '🔍 Google OAuth: <span style="color: #28a745;">利用可能</span>'
-                    : '🔍 Google OAuth: <span style="color: #6c757d;">読み込み中...</span>';
+                const isFirebaseReady = window.firebaseReady && window.firebaseAuth;
+                googleStatus.innerHTML = isFirebaseReady 
+                    ? '🔍 Firebase Google OAuth: <span style="color: #28a745;">利用可能</span>'
+                    : '🔍 Firebase Google OAuth: <span style="color: #6c757d;">読み込み中...</span>';
             }
             
             if (appleStatus) {
