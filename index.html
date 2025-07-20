@@ -2745,12 +2745,15 @@
         // OAuth認証システム
         class OAuthManager {
             constructor() {
-                // 【重要】実際のクライアントIDに置き換えてください
-                // Google Cloud Console > APIs & Services > Credentials で取得したクライアントID
-                this.googleClientId = '123456789-abcdefghijklmnopqrstuvwxyz.apps.googleusercontent.com';
+                // 【重要】Firebase Consoleで取得した実際のクライアントIDに置き換えが必要
+                // 現在はダミーIDのため認証エラーが発生します
+                this.googleClientId = 'REPLACE_WITH_ACTUAL_FIREBASE_CLIENT_ID.apps.googleusercontent.com';
                 
                 // Apple Developer Program で設定した Service ID
                 this.appleClientId = 'com.medicationtracker.signin';
+                
+                // クライアントIDが未設定の場合は一時的に無効化
+                this.isConfigured = !this.googleClientId.includes('REPLACE_WITH_ACTUAL');
                 
                 this.init();
             }
@@ -2764,6 +2767,13 @@
 
             async loadGoogleAPI() {
                 return new Promise((resolve) => {
+                    // 設定が未完了の場合はスキップ
+                    if (!this.isConfigured) {
+                        console.log('Google OAuth設定が未完了のため、APIの読み込みをスキップします');
+                        resolve();
+                        return;
+                    }
+                    
                     // Google Sign-In API のスクリプトローディング
                     if (window.google && window.google.accounts) {
                         resolve();
@@ -2833,6 +2843,12 @@
 
             async signInWithGoogle() {
                 try {
+                    // 設定が未完了の場合は設定手順を表示
+                    if (!this.isConfigured) {
+                        this.showOAuthSetupInstructions();
+                        return;
+                    }
+
                     if (!window.google || !window.google.accounts) {
                         throw new Error('Google Sign-In APIが読み込まれていません');
                     }
@@ -2850,6 +2866,76 @@
                     // エラー時は手動サインインボタンを表示
                     this.renderGoogleSignInButton();
                 }
+            }
+
+            showOAuthSetupInstructions() {
+                const modal = document.createElement('div');
+                modal.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0,0,0,0.5);
+                    z-index: 10000;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                `;
+                
+                const content = document.createElement('div');
+                content.style.cssText = `
+                    background: white;
+                    padding: 30px;
+                    border-radius: 10px;
+                    max-width: 500px;
+                    max-height: 80vh;
+                    overflow-y: auto;
+                    margin: 20px;
+                `;
+                
+                content.innerHTML = `
+                    <h3 style="color: #667eea; margin-top: 0;">🔧 Google OAuth設定が必要です</h3>
+                    <p><strong>現在の状態:</strong> Firebase認証が設定されていません</p>
+                    
+                    <h4>設定手順:</h4>
+                    <ol style="text-align: left; padding-left: 20px;">
+                        <li><strong>Firebase Console</strong> にアクセス</li>
+                        <li><strong>Authentication → Sign-in method</strong> を開く</li>
+                        <li><strong>Google</strong> を有効化</li>
+                        <li><strong>Web SDK configuration</strong> からクライアントIDをコピー</li>
+                        <li>コード内の <code>REPLACE_WITH_ACTUAL_FIREBASE_CLIENT_ID</code> を置き換え</li>
+                        <li><strong>承認済みドメイン</strong> に <code>jumps710.github.io</code> を追加</li>
+                    </ol>
+                    
+                    <p style="background: #fff3cd; padding: 10px; border-radius: 5px; font-size: 14px;">
+                        <strong>注意:</strong> 設定完了まで一時的にデモ認証を使用できます。
+                    </p>
+                    
+                    <div style="text-align: center; margin-top: 20px;">
+                        <button onclick="this.parentElement.parentElement.parentElement.remove()" 
+                                style="background: #4CAF50; color: white; border: none; padding: 10px 20px; border-radius: 5px; margin-right: 10px;">
+                            閉じる
+                        </button>
+                        <button onclick="oauthManager.showDemoSignIn(); this.parentElement.parentElement.parentElement.remove()" 
+                                style="background: #2196F3; color: white; border: none; padding: 10px 20px; border-radius: 5px;">
+                            デモ認証を試す
+                        </button>
+                    </div>
+                `;
+                
+                modal.appendChild(content);
+                document.body.appendChild(modal);
+            }
+
+            showDemoSignIn() {
+                const demoUser = {
+                    id: 'demo_' + Date.now(),
+                    email: 'demo@medicationtracker.app',
+                    name: 'デモユーザー',
+                    provider: 'demo'
+                };
+                this.processOAuthSignIn(demoUser);
             }
 
             renderGoogleSignInButton() {
@@ -2897,6 +2983,12 @@
 
             async signInWithApple() {
                 try {
+                    // 設定が未完了の場合は設定手順を表示
+                    if (!this.isConfigured) {
+                        this.showAppleSetupInstructions();
+                        return;
+                    }
+
                     if (!window.AppleID) {
                         throw new Error('Apple Sign-In APIが読み込まれていません');
                     }
@@ -2910,9 +3002,14 @@
                     if (error.error === 'popup_closed_by_user') {
                         console.log('ユーザーがApple Sign-Inをキャンセルしました');
                     } else {
-                        alert('Apple Sign-Inが利用できません。\n\nApple Developer Programでの設定が必要です:\n- App ID作成\n- Service ID設定\n- ドメイン認証');
+                        this.showAppleSetupInstructions();
                     }
                 }
+            }
+
+            showAppleSetupInstructions() {
+                alert('Apple Sign-Inが利用できません。\n\n設定が必要です:\n• Apple Developer Program登録\n• App ID作成とSign In with Apple有効化\n• Service ID設定\n• ドメイン認証 (jumps710.github.io)\n\n設定完了まで「デモ認証を試す」をご利用ください。');
+                this.showDemoSignIn();
             }
 
             handleGoogleSignIn(response) {
@@ -3383,17 +3480,23 @@
             const appleStatus = document.getElementById('apple-oauth-status');
             
             if (googleStatus) {
-                const isGoogleReady = window.google && window.google.accounts;
-                googleStatus.innerHTML = isGoogleReady 
-                    ? '🔍 Google OAuth: <span style="color: #28a745;">利用可能</span>'
-                    : '🔍 Google OAuth: <span style="color: #6c757d;">読み込み中...</span>';
+                const isConfigured = oauthManager && oauthManager.isConfigured;
+                const isGoogleReady = window.google && window.google.accounts && isConfigured;
+                
+                if (isGoogleReady) {
+                    googleStatus.innerHTML = '🔍 Google OAuth: <span style="color: #28a745;">利用可能</span>';
+                } else if (!isConfigured) {
+                    googleStatus.innerHTML = '🔍 Google OAuth: <span style="color: #dc3545;">設定が必要</span>';
+                } else {
+                    googleStatus.innerHTML = '🔍 Google OAuth: <span style="color: #6c757d;">読み込み中...</span>';
+                }
             }
             
             if (appleStatus) {
                 const isAppleReady = window.AppleID && window.AppleID.auth;
                 appleStatus.innerHTML = isAppleReady 
                     ? '🍎 Apple Sign In: <span style="color: #28a745;">利用可能</span>'
-                    : '🍎 Apple Sign In: <span style="color: #ffc107;">設定中</span>';
+                    : '🍎 Apple Sign In: <span style="color: #ffc107;">設定が必要</span>';
             }
         }
 
