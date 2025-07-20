@@ -695,6 +695,37 @@
                 </div>
             </div>
             
+            <!-- OAuth設定情報 -->
+            <div class="medication-card">
+                <h3>🔐 OAuth認証について</h3>
+                <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 10px; border-radius: 5px; margin-bottom: 10px;">
+                    <strong>開発環境での動作:</strong>
+                    <ul style="margin: 5px 0; padding-left: 20px; font-size: 14px;">
+                        <li>現在はモック（疑似）認証が動作します</li>
+                        <li>実際のGoogle/Apple認証を使用するには設定が必要です</li>
+                    </ul>
+                </div>
+                <details style="margin-top: 10px;">
+                    <summary style="cursor: pointer; color: #667eea;">本番環境で必要な設定を表示</summary>
+                    <div style="margin-top: 10px; font-size: 12px; color: #666;">
+                        <strong>Google OAuth設定:</strong>
+                        <ol style="margin: 5px 0; padding-left: 20px;">
+                            <li>Google Cloud Consoleでプロジェクト作成</li>
+                            <li>OAuth 2.0クライアントIDを取得</li>
+                            <li>認証済みドメインに本サイトを追加</li>
+                            <li>コード内のクライアントIDを更新</li>
+                        </ol>
+                        <strong>Apple Sign In設定:</strong>
+                        <ol style="margin: 5px 0; padding-left: 20px;">
+                            <li>Apple Developer Programに登録</li>
+                            <li>App IDを作成してSign In with Appleを有効化</li>
+                            <li>Service IDを設定</li>
+                            <li>コード内のクライアントIDを更新</li>
+                        </ol>
+                    </div>
+                </details>
+            </div>
+            
             <!-- 法的文書セクション -->
             <div class="medication-card">
                 <h3>📋 規約・ポリシー</h3>
@@ -2744,6 +2775,13 @@
 
             async loadGoogleAPI() {
                 return new Promise((resolve) => {
+                    // 開発環境では Google API を読み込まない
+                    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.includes('github.io')) {
+                        console.log('開発環境のため、Google OAuth はモック動作します');
+                        resolve();
+                        return;
+                    }
+                    
                     // Google Sign-In API のスクリプトローディング
                     if (window.google && window.google.accounts) {
                         resolve();
@@ -2754,10 +2792,13 @@
                     script.src = 'https://accounts.google.com/gsi/client';
                     script.onload = () => {
                         if (window.google && window.google.accounts) {
-                            window.google.accounts.id.initialize({
-                                client_id: this.googleClientId,
-                                callback: this.handleGoogleSignIn.bind(this)
-                            });
+                            // 実際のクライアントIDが設定されている場合のみ初期化
+                            if (this.googleClientId && !this.googleClientId.includes('YOUR_')) {
+                                window.google.accounts.id.initialize({
+                                    client_id: this.googleClientId,
+                                    callback: this.handleGoogleSignIn.bind(this)
+                                });
+                            }
                         }
                         resolve();
                     };
@@ -2792,6 +2833,16 @@
 
             async signInWithGoogle() {
                 try {
+                    // 開発環境またはクライアントIDが未設定の場合はモック動作
+                    if (window.location.hostname.includes('github.io') || 
+                        window.location.hostname === 'localhost' || 
+                        !this.googleClientId || 
+                        this.googleClientId.includes('YOUR_')) {
+                        console.log('開発環境またはクライアントID未設定のため、モック認証を実行します');
+                        this.showMockGoogleSignIn();
+                        return;
+                    }
+
                     if (!window.google || !window.google.accounts) {
                         throw new Error('Google Sign-In APIが読み込まれていません');
                     }
@@ -2886,23 +2937,33 @@
 
             // モック関数（開発用）
             showMockGoogleSignIn() {
-                const mockUser = {
-                    id: 'google_' + Date.now(),
-                    email: 'user@gmail.com',
-                    name: 'Google ユーザー',
-                    provider: 'google'
-                };
-                this.processOAuthSignIn(mockUser);
+                // ユーザーにモック動作であることを通知
+                const proceed = confirm('開発環境のため、模擬的なGoogleログインを実行します。続行しますか？\n\n実際のGoogle認証を使用するには、Google Cloud Consoleでプロジェクトを設定し、有効なクライアントIDを設定する必要があります。');
+                
+                if (proceed) {
+                    const mockUser = {
+                        id: 'google_' + Date.now(),
+                        email: 'demo@gmail.com',
+                        name: 'デモユーザー (Google)',
+                        provider: 'google'
+                    };
+                    this.processOAuthSignIn(mockUser);
+                }
             }
 
             showMockAppleSignIn() {
-                const mockUser = {
-                    id: 'apple_' + Date.now(),
-                    email: 'user@icloud.com',
-                    name: 'Apple ユーザー',
-                    provider: 'apple'
-                };
-                this.processOAuthSignIn(mockUser);
+                // ユーザーにモック動作であることを通知
+                const proceed = confirm('開発環境のため、模擬的なAppleログインを実行します。続行しますか？\n\n実際のApple Sign Inを使用するには、Apple Developer Programでプロジェクトを設定する必要があります。');
+                
+                if (proceed) {
+                    const mockUser = {
+                        id: 'apple_' + Date.now(),
+                        email: 'demo@icloud.com',
+                        name: 'デモユーザー (Apple)',
+                        provider: 'apple'
+                    };
+                    this.processOAuthSignIn(mockUser);
+                }
             }
         }
 
