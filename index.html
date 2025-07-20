@@ -2112,8 +2112,18 @@
             }
         }
         
-        // 画像圧縮関数
+        // 最適化された画像圧縮関数
         async function compressImage(dataUrl, maxWidth = 800, quality = 0.7) {
+            // PerformanceManagerが利用可能な場合は最適化版を使用
+            if (window.performanceManager) {
+                const type = maxWidth <= 300 ? 'thumbnail' : maxWidth <= 400 ? 'medication' : 'history';
+                return window.performanceManager.optimizedCompressImage(dataUrl, type, {
+                    maxWidth: maxWidth,
+                    quality: quality
+                });
+            }
+            
+            // フォールバック: 既存の圧縮機能
             return new Promise((resolve) => {
                 const img = new Image();
                 img.onload = function() {
@@ -3824,16 +3834,297 @@
             }
         }
 
+        // パフォーマンス最適化システム
+        class PerformanceManager {
+            constructor() {
+                this.imageCache = new Map();
+                this.dataCache = new Map();
+                this.compressionWorker = null;
+                this.performanceObserver = null;
+                this.init();
+            }
+
+            init() {
+                this.setupImageOptimization();
+                this.setupCaching();
+                this.setupPerformanceMonitoring();
+                this.setupLazyLoading();
+                console.log('Performance Manager 初期化完了');
+            }
+
+            // 高度な画像圧縮最適化
+            setupImageOptimization() {
+                // WebP対応チェック
+                this.supportsWebP = this.checkWebPSupport();
+                
+                // 圧縮設定の最適化
+                this.compressionSettings = {
+                    medication: { maxWidth: 400, quality: 0.8, format: 'jpeg' },
+                    history: { maxWidth: 300, quality: 0.7, format: 'jpeg' },
+                    thumbnail: { maxWidth: 150, quality: 0.6, format: 'jpeg' }
+                };
+            }
+
+            checkWebPSupport() {
+                const canvas = document.createElement('canvas');
+                canvas.width = 1;
+                canvas.height = 1;
+                return canvas.toDataURL('image/webp').startsWith('data:image/webp');
+            }
+
+            // 最適化された画像圧縮
+            async optimizedCompressImage(dataUrl, type = 'medication', options = {}) {
+                const startTime = performance.now();
+                
+                try {
+                    // キャッシュチェック
+                    const cacheKey = `${dataUrl.substring(0, 50)}_${type}`;
+                    if (this.imageCache.has(cacheKey)) {
+                        const endTime = performance.now();
+                        this.trackPerformance('image_compression_cached', endTime - startTime);
+                        return this.imageCache.get(cacheKey);
+                    }
+
+                    const settings = { ...this.compressionSettings[type], ...options };
+                    
+                    // WebP使用可能な場合はWebP形式で圧縮
+                    if (this.supportsWebP && settings.format === 'jpeg') {
+                        settings.format = 'webp';
+                        settings.quality += 0.1; // WebPの場合品質を少し上げる
+                    }
+
+                    const compressedImage = await this.compressImageAdvanced(dataUrl, settings);
+                    
+                    // キャッシュに保存（最大50件）
+                    if (this.imageCache.size >= 50) {
+                        const firstKey = this.imageCache.keys().next().value;
+                        this.imageCache.delete(firstKey);
+                    }
+                    this.imageCache.set(cacheKey, compressedImage);
+
+                    const endTime = performance.now();
+                    this.trackPerformance('image_compression', endTime - startTime);
+                    
+                    return compressedImage;
+                } catch (error) {
+                    console.error('画像圧縮エラー:', error);
+                    this.trackPerformance('image_compression_error', performance.now() - startTime);
+                    return dataUrl; // エラー時は元画像を返す
+                }
+            }
+
+            async compressImageAdvanced(dataUrl, settings) {
+                return new Promise((resolve) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        
+                        // アスペクト比を保持してリサイズ
+                        let { width, height } = this.calculateOptimalSize(
+                            img.width, img.height, settings.maxWidth
+                        );
+                        
+                        canvas.width = width;
+                        canvas.height = height;
+                        
+                        // 高品質リサイズ設定
+                        ctx.imageSmoothingEnabled = true;
+                        ctx.imageSmoothingQuality = 'high';
+                        
+                        // 画像描画
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        // 圧縮形式に応じて出力
+                        const mimeType = settings.format === 'webp' ? 'image/webp' : 'image/jpeg';
+                        const compressed = canvas.toDataURL(mimeType, settings.quality);
+                        
+                        resolve(compressed);
+                    };
+                    img.src = dataUrl;
+                });
+            }
+
+            calculateOptimalSize(originalWidth, originalHeight, maxWidth) {
+                if (originalWidth <= maxWidth) {
+                    return { width: originalWidth, height: originalHeight };
+                }
+                
+                const ratio = maxWidth / originalWidth;
+                return {
+                    width: Math.round(originalWidth * ratio),
+                    height: Math.round(originalHeight * ratio)
+                };
+            }
+
+            // データキャッシング戦略
+            setupCaching() {
+                // LocalStorage最適化
+                this.optimizeLocalStorage();
+                
+                // Memory cache for frequently accessed data
+                setInterval(() => {
+                    this.cleanupCache();
+                }, 300000); // 5分ごと
+            }
+
+            optimizeLocalStorage() {
+                try {
+                    // LocalStorageサイズチェック
+                    const usage = this.getLocalStorageUsage();
+                    console.log('LocalStorage使用量:', usage);
+                    
+                    if (usage.percentage > 80) {
+                        this.cleanupOldData();
+                    }
+                } catch (error) {
+                    console.error('LocalStorage最適化エラー:', error);
+                }
+            }
+
+            getLocalStorageUsage() {
+                let total = 0;
+                for (let key in localStorage) {
+                    if (localStorage.hasOwnProperty(key)) {
+                        total += localStorage[key].length;
+                    }
+                }
+                
+                const quota = 5 * 1024 * 1024; // 5MB概算
+                return {
+                    used: total,
+                    quota: quota,
+                    percentage: (total / quota) * 100
+                };
+            }
+
+            cleanupOldData() {
+                const history = JSON.parse(localStorage.getItem('medicationHistory') || '[]');
+                const cutoffDate = new Date();
+                cutoffDate.setMonth(cutoffDate.getMonth() - 6); // 6ヶ月より古いデータ
+                
+                const filteredHistory = history.filter(item => 
+                    new Date(item.takenAt) > cutoffDate
+                );
+                
+                if (filteredHistory.length < history.length) {
+                    localStorage.setItem('medicationHistory', JSON.stringify(filteredHistory));
+                    console.log(`古い履歴データを ${history.length - filteredHistory.length} 件削除`);
+                }
+            }
+
+            cleanupCache() {
+                // メモリキャッシュのクリーンアップ
+                if (this.imageCache.size > 30) {
+                    const entries = Array.from(this.imageCache.entries());
+                    const toKeep = entries.slice(-20); // 最新20件を保持
+                    this.imageCache.clear();
+                    toKeep.forEach(([key, value]) => {
+                        this.imageCache.set(key, value);
+                    });
+                }
+            }
+
+            // パフォーマンス監視
+            setupPerformanceMonitoring() {
+                // ページロード時間測定
+                window.addEventListener('load', () => {
+                    const loadTime = performance.timing.loadEventEnd - performance.timing.navigationStart;
+                    this.trackPerformance('page_load_time', loadTime);
+                });
+
+                // メモリ使用量監視（利用可能な場合）
+                if ('memory' in performance) {
+                    setInterval(() => {
+                        const memoryInfo = performance.memory;
+                        this.trackPerformance('memory_usage', {
+                            used: memoryInfo.usedJSHeapSize,
+                            total: memoryInfo.totalJSHeapSize,
+                            limit: memoryInfo.jsHeapSizeLimit
+                        });
+                    }, 60000); // 1分ごと
+                }
+            }
+
+            // 遅延読み込み
+            setupLazyLoading() {
+                // Intersection Observer for lazy loading
+                if ('IntersectionObserver' in window) {
+                    this.setupImageLazyLoading();
+                }
+            }
+
+            setupImageLazyLoading() {
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            const img = entry.target;
+                            if (img.dataset.src) {
+                                img.src = img.dataset.src;
+                                img.removeAttribute('data-src');
+                                observer.unobserve(img);
+                            }
+                        }
+                    });
+                }, { threshold: 0.1 });
+
+                // 既存の画像に適用
+                document.querySelectorAll('img[data-src]').forEach(img => {
+                    observer.observe(img);
+                });
+                
+                this.imageObserver = observer;
+            }
+
+            // パフォーマンス指標記録
+            trackPerformance(metricName, value) {
+                if (window.analyticsManager) {
+                    window.analyticsManager.trackPerformance(metricName, value);
+                }
+                console.log(`Performance: ${metricName}`, value);
+            }
+
+            // デバウンス関数
+            debounce(func, wait) {
+                let timeout;
+                return function executedFunction(...args) {
+                    const later = () => {
+                        clearTimeout(timeout);
+                        func(...args);
+                    };
+                    clearTimeout(timeout);
+                    timeout = setTimeout(later, wait);
+                };
+            }
+
+            // スロットル関数
+            throttle(func, limit) {
+                let inThrottle;
+                return function() {
+                    const args = arguments;
+                    const context = this;
+                    if (!inThrottle) {
+                        func.apply(context, args);
+                        inThrottle = true;
+                        setTimeout(() => inThrottle = false, limit);
+                    }
+                };
+            }
+        }
+
         // マネージャーの初期化
         let cloudSyncManager;
         let analyticsManager;
+        let performanceManager;
         
         document.addEventListener('DOMContentLoaded', () => {
             cloudSyncManager = new CloudSyncManager();
             analyticsManager = new AnalyticsManager();
+            performanceManager = new PerformanceManager();
             
             // グローバルアクセス用
             window.analyticsManager = analyticsManager;
+            window.performanceManager = performanceManager;
         });
 
         // グローバル関数
