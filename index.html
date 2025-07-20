@@ -957,6 +957,11 @@
         
         // ページ切り替え
         function showPage(pageName) {
+            // アナリティクス: ページビュー追跡
+            if (analyticsManager) {
+                analyticsManager.trackPageView(pageName);
+            }
+            
             // すべてのページを非表示
             document.querySelectorAll('.page').forEach(page => {
                 page.classList.remove('active');
@@ -1125,6 +1130,11 @@
                     createdAt: new Date().toISOString()
                 };
                 medications.push(medication);
+                
+                // アナリティクス: 薬登録追跡
+                if (analyticsManager) {
+                    analyticsManager.trackMedicationEvent('add', medication);
+                }
                 
                 // 通知の設定
                 scheduleNotifications(medication);
@@ -2001,6 +2011,11 @@
         
         // OSカメラアプリを起動
         function openCameraApp() {
+            // アナリティクス: カメラ使用追跡
+            if (analyticsManager) {
+                analyticsManager.trackCameraUsage('capture_started');
+            }
+            
             const fileInput = document.getElementById('camera-input');
             fileInput.click();
         }
@@ -2199,6 +2214,11 @@
                 history.push(historyItem);
                 localStorage.setItem('history', JSON.stringify(history));
                 
+                // アナリティクス: 服用記録追跡
+                if (analyticsManager) {
+                    analyticsManager.trackMedicationTaken(med.id, med.name);
+                }
+                
                 // 一時保存をクリア
                 sessionStorage.removeItem('tempMedicationImage');
                 
@@ -2250,6 +2270,11 @@
                 };
                 history.push(historyItem);
                 localStorage.setItem('history', JSON.stringify(history));
+                
+                // アナリティクス: 服用記録追跡
+                if (analyticsManager) {
+                    analyticsManager.trackMedicationTaken(med.id, med.name);
+                }
                 
                 // 一時保存をクリア
                 sessionStorage.removeItem('tempMedicationImage');
@@ -2450,6 +2475,15 @@
                 }
                 
                 showMessage('login-message', 'ログインしました！', 'success');
+                
+                // アナリティクス: ユーザーログイン追跡
+                if (analyticsManager) {
+                    analyticsManager.setUser(user.uid, {
+                        email: user.email,
+                        display_name: user.displayName,
+                        provider: 'oauth'
+                    });
+                }
                 currentUser = user;
                 isAuthenticated = true;
                 
@@ -2785,6 +2819,7 @@
                         import { getAuth, signInWithPopup, GoogleAuthProvider } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
                         import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, where, getDocs, onSnapshot, serverTimestamp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
                         import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-storage.js';
+                        import { getAnalytics, logEvent, setUserId, setUserProperties } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics.js';
                         
                         // Firebase初期化
                         const firebaseConfig = ${JSON.stringify(this.firebaseConfig)};
@@ -2792,6 +2827,7 @@
                         window.firebaseAuth = getAuth(window.firebaseApp);
                         window.firebaseDb = getFirestore(window.firebaseApp);
                         window.firebaseStorage = getStorage(window.firebaseApp);
+                        window.firebaseAnalytics = getAnalytics(window.firebaseApp);
                         
                         // Firebase Auth
                         window.GoogleAuthProvider = GoogleAuthProvider;
@@ -2815,7 +2851,12 @@
                         window.firebaseGetDownloadURL = getDownloadURL;
                         window.firebaseDeleteObject = deleteObject;
                         
-                        console.log('Firebase SDK (Auth + Firestore + Storage) 初期化完了');
+                        // Firebase Analytics
+                        window.firebaseLogEvent = logEvent;
+                        window.firebaseSetUserId = setUserId;
+                        window.firebaseSetUserProperties = setUserProperties;
+                        
+                        console.log('Firebase SDK (Auth + Firestore + Storage + Analytics) 初期化完了');
                         window.firebaseReady = true;
                     `;
                     
@@ -3133,10 +3174,20 @@
 
                     console.log('薬データ同期完了:', mergedMedications.length + '件');
                     this.showSyncStatus('薬データ同期完了', 'success');
+                    
+                    // アナリティクス: 同期成功追跡
+                    if (window.analyticsManager) {
+                        window.analyticsManager.trackSyncEvent('medications', true);
+                    }
 
                 } catch (error) {
                     console.error('薬データ同期エラー:', error);
                     this.showSyncStatus('薬データ同期失敗', 'error');
+                    
+                    // アナリティクス: 同期失敗追跡
+                    if (window.analyticsManager) {
+                        window.analyticsManager.trackSyncEvent('medications', false, error.message);
+                    }
                 }
             }
 
@@ -3583,10 +3634,206 @@
             }
         }
 
-        // クラウド同期マネージャーの初期化
+        // Firebase Analytics 使用状況分析システム
+        class AnalyticsManager {
+            constructor() {
+                this.sessionStartTime = Date.now();
+                this.isInitialized = false;
+                this.init();
+            }
+
+            async init() {
+                // Firebase準備完了を待機
+                await this.waitForFirebase();
+                this.setupEventListeners();
+                this.isInitialized = true;
+                
+                // 初期化完了をログ
+                this.logEvent('app_initialized', {
+                    timestamp: new Date().toISOString(),
+                    user_agent: navigator.userAgent,
+                    screen_resolution: `${screen.width}x${screen.height}`,
+                    viewport_size: `${window.innerWidth}x${window.innerHeight}`
+                });
+
+                console.log('Analytics Manager 初期化完了');
+            }
+
+            async waitForFirebase() {
+                return new Promise((resolve) => {
+                    const checkFirebase = () => {
+                        if (window.firebaseReady && window.firebaseAnalytics) {
+                            resolve();
+                        } else {
+                            setTimeout(checkFirebase, 100);
+                        }
+                    };
+                    checkFirebase();
+                });
+            }
+
+            setupEventListeners() {
+                // ページ離脱時のセッション時間記録
+                window.addEventListener('beforeunload', () => {
+                    const sessionDuration = Date.now() - this.sessionStartTime;
+                    this.logEvent('session_end', {
+                        session_duration: Math.round(sessionDuration / 1000)
+                    });
+                });
+
+                // エラー追跡
+                window.addEventListener('error', (event) => {
+                    this.logEvent('javascript_error', {
+                        error_message: event.message,
+                        error_filename: event.filename,
+                        error_lineno: event.lineno,
+                        error_colno: event.colno
+                    });
+                });
+
+                // 未処理の Promise リジェクション追跡
+                window.addEventListener('unhandledrejection', (event) => {
+                    this.logEvent('unhandled_promise_rejection', {
+                        reason: event.reason?.toString() || 'Unknown reason'
+                    });
+                });
+            }
+
+            // カスタムイベントログ
+            logEvent(eventName, parameters = {}) {
+                if (!this.isInitialized || !window.firebaseAnalytics) {
+                    console.log('Analytics not ready:', eventName, parameters);
+                    return;
+                }
+
+                try {
+                    // 共通パラメータを追加
+                    const enrichedParams = {
+                        ...parameters,
+                        timestamp: new Date().toISOString(),
+                        page_url: window.location.href,
+                        user_logged_in: !!localStorage.getItem('currentUser')
+                    };
+
+                    window.firebaseLogEvent(window.firebaseAnalytics, eventName, enrichedParams);
+                    console.log('Analytics Event:', eventName, enrichedParams);
+                } catch (error) {
+                    console.error('Analytics logging error:', error);
+                }
+            }
+
+            // ユーザー関連の分析設定
+            setUser(userId, userProperties = {}) {
+                if (!this.isInitialized || !window.firebaseAnalytics) return;
+
+                try {
+                    // ユーザーIDを設定
+                    window.firebaseSetUserId(window.firebaseAnalytics, userId);
+                    
+                    // ユーザープロパティを設定
+                    const defaultProperties = {
+                        user_registration_date: new Date().toISOString(),
+                        app_version: '2.1',
+                        platform: navigator.platform
+                    };
+
+                    window.firebaseSetUserProperties(window.firebaseAnalytics, {
+                        ...defaultProperties,
+                        ...userProperties
+                    });
+
+                    this.logEvent('user_login', {
+                        user_id: userId,
+                        login_method: 'oauth'
+                    });
+
+                } catch (error) {
+                    console.error('User analytics setup error:', error);
+                }
+            }
+
+            // 薬関連のイベント追跡
+            trackMedicationEvent(action, medicationData = {}) {
+                const eventParams = {
+                    medication_action: action,
+                    medication_count: parseInt(medicationData.totalCount) || 0,
+                    medication_category: medicationData.purpose || 'unknown'
+                };
+
+                this.logEvent('medication_interaction', eventParams);
+            }
+
+            // 服用記録の追跡
+            trackMedicationTaken(medicationId, medicationName) {
+                this.logEvent('medication_taken', {
+                    medication_id: medicationId,
+                    medication_name: medicationName,
+                    taken_at: new Date().toISOString()
+                });
+            }
+
+            // カメラ機能の使用追跡
+            trackCameraUsage(action) {
+                this.logEvent('camera_usage', {
+                    camera_action: action,
+                    feature: 'medication_verification'
+                });
+            }
+
+            // ページナビゲーション追跡
+            trackPageView(pageName) {
+                this.logEvent('page_view', {
+                    page_name: pageName,
+                    previous_page: this.currentPage || 'unknown'
+                });
+                this.currentPage = pageName;
+            }
+
+            // データ同期イベント追跡
+            trackSyncEvent(syncType, success, errorMessage = null) {
+                this.logEvent('data_sync', {
+                    sync_type: syncType,
+                    sync_success: success,
+                    sync_error: errorMessage
+                });
+            }
+
+            // パフォーマンス指標の追跡
+            trackPerformance(metricName, value, unit = 'ms') {
+                this.logEvent('performance_metric', {
+                    metric_name: metricName,
+                    metric_value: value,
+                    metric_unit: unit
+                });
+            }
+
+            // 機能使用頻度の追跡
+            trackFeatureUsage(featureName, action = 'used') {
+                this.logEvent('feature_usage', {
+                    feature_name: featureName,
+                    feature_action: action
+                });
+            }
+
+            // エンゲージメント指標
+            trackEngagement(engagementType, value = 1) {
+                this.logEvent('user_engagement', {
+                    engagement_type: engagementType,
+                    engagement_value: value
+                });
+            }
+        }
+
+        // マネージャーの初期化
         let cloudSyncManager;
+        let analyticsManager;
+        
         document.addEventListener('DOMContentLoaded', () => {
             cloudSyncManager = new CloudSyncManager();
+            analyticsManager = new AnalyticsManager();
+            
+            // グローバルアクセス用
+            window.analyticsManager = analyticsManager;
         });
 
         // グローバル関数
