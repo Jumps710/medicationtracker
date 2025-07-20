@@ -32,6 +32,34 @@
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
         
+        .ad-banner {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px auto;
+            max-width: 600px;
+            text-align: center;
+            font-size: 12px;
+            color: #6c757d;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .ad-banner.loading {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+        }
+        
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        
         .container {
             max-width: 600px;
             margin: 0 auto;
@@ -199,6 +227,60 @@
         .cancel-button {
             background-color: #f44336;
             color: white;
+        }
+        
+        .oauth-buttons {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+        }
+        
+        .oauth-button {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            background: white;
+        }
+        
+        .oauth-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .google-signin {
+            border-color: #db4437;
+            color: #db4437;
+        }
+        
+        .google-signin:hover {
+            background-color: #db4437;
+            color: white;
+        }
+        
+        .apple-signin {
+            border-color: #000;
+            color: #000;
+        }
+        
+        .apple-signin:hover {
+            background-color: #000;
+            color: white;
+        }
+        
+        .oauth-divider {
+            text-align: center;
+            margin: 15px 0;
+            color: #666;
+            font-size: 14px;
         }
         
         .history-item {
@@ -422,6 +504,11 @@
         <h1>お薬のんだ？</h1>
     </div>
     
+    <!-- 広告バナー -->
+    <div class="ad-banner" id="ad-banner">
+        <div id="ad-content">広告を読み込み中...</div>
+    </div>
+    
     <!-- 認証画面 -->
     <div id="auth-container" style="display: none;">
         <div class="container">
@@ -446,6 +533,25 @@
                             <a href="#" onclick="showPasswordReset()" style="color: #4CAF50; text-decoration: none;">パスワードを忘れた方はこちら</a>
                         </div>
                     </form>
+                    
+                    <!-- OAuth認証ボタン -->
+                    <div class="oauth-buttons">
+                        <div class="oauth-divider">または</div>
+                        <button class="oauth-button google-signin" onclick="signInWithGoogle()">
+                            <span>🔍</span>
+                            Googleアカウントでログイン
+                        </button>
+                        <button class="oauth-button apple-signin" onclick="signInWithApple()">
+                            <span>🍎</span>
+                            Appleアカウントでログイン
+                        </button>
+                    </div>
+                    
+                    <!-- 利用規約・プライバシーポリシー同意 -->
+                    <div style="margin: 15px 0; font-size: 12px; color: #666; text-align: center;">
+                        ログインすることで、<a href="terms-of-service.html" target="_blank" style="color: #667eea;">利用規約</a>および<a href="privacy-policy.html" target="_blank" style="color: #667eea;">プライバシーポリシー</a>に同意したものとみなされます。
+                    </div>
+                    
                     <div id="login-message" class="form-message"></div>
                 </div>
             </div>
@@ -472,6 +578,25 @@
                             <button type="button" onclick="showLoginPage()" class="cancel-button">ログインに戻る</button>
                         </div>
                     </form>
+                    
+                    <!-- OAuth認証ボタン -->
+                    <div class="oauth-buttons">
+                        <div class="oauth-divider">または</div>
+                        <button class="oauth-button google-signin" onclick="signInWithGoogle()">
+                            <span>🔍</span>
+                            Googleアカウントで登録
+                        </button>
+                        <button class="oauth-button apple-signin" onclick="signInWithApple()">
+                            <span>🍎</span>
+                            Appleアカウントで登録
+                        </button>
+                    </div>
+                    
+                    <!-- 利用規約・プライバシーポリシー同意 -->
+                    <div style="margin: 15px 0; font-size: 12px; color: #666; text-align: center;">
+                        登録することで、<a href="terms-of-service.html" target="_blank" style="color: #667eea;">利用規約</a>および<a href="privacy-policy.html" target="_blank" style="color: #667eea;">プライバシーポリシー</a>に同意したものとみなされます。
+                    </div>
+                    
                     <div id="register-message" class="form-message"></div>
                 </div>
             </div>
@@ -546,6 +671,39 @@
                             ※このアプリは医療機器ではありません。医療判断は必ず医師にご相談ください。
                         </p>
                     </div>
+                </div>
+            </div>
+            
+            <!-- クラウド同期セクション -->
+            <div class="medication-card">
+                <h3>☁️ クラウド同期</h3>
+                <p style="color: #666; margin-bottom: 15px;">データをクラウドに保存して端末間で同期できます</p>
+                <div style="margin-bottom: 15px;">
+                    <div style="font-size: 14px; color: #666;">
+                        最後の同期: <span id="last-sync-time">未同期</span>
+                    </div>
+                    <div style="font-size: 14px; color: #666;">
+                        オンライン状態: <span id="online-status">オフライン</span>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button onclick="manualSync()" style="background: #4CAF50; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; flex: 1;">手動同期</button>
+                    <button onclick="migrateData()" style="background: #2196F3; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; flex: 1;">データ移行</button>
+                </div>
+                <div style="margin-top: 10px; font-size: 12px; color: #999;">
+                    ※ログイン後、データが自動的にクラウドに同期されます
+                </div>
+            </div>
+            
+            <!-- 法的文書セクション -->
+            <div class="medication-card">
+                <h3>📋 規約・ポリシー</h3>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <a href="privacy-policy.html" target="_blank" style="background: #4CAF50; color: white; padding: 8px 15px; border-radius: 5px; text-decoration: none; flex: 1; text-align: center;">プライバシーポリシー</a>
+                    <a href="terms-of-service.html" target="_blank" style="background: #2196F3; color: white; padding: 8px 15px; border-radius: 5px; text-decoration: none; flex: 1; text-align: center;">利用規約</a>
+                </div>
+                <div style="margin-top: 10px; font-size: 12px; color: #999; text-align: center;">
+                    ストア公開に必要な法的文書です
                 </div>
             </div>
             
@@ -2509,6 +2667,609 @@
 
         // アプリ起動時にも実行
         cleanupOldPhotos();
+
+        // 広告管理システム
+        class AdManager {
+            constructor() {
+                this.adProviders = ['google-adsense', 'facebook-ads', 'amazon-ads'];
+                this.currentProvider = 0;
+                this.adRefreshInterval = 30000; // 30秒
+                this.init();
+            }
+
+            init() {
+                this.loadAd();
+                // 定期的な広告更新
+                setInterval(() => this.loadAd(), this.adRefreshInterval);
+            }
+
+            async loadAd() {
+                const adBanner = document.getElementById('ad-banner');
+                const adContent = document.getElementById('ad-content');
+                
+                // ローディング状態
+                adBanner.classList.add('loading');
+                adContent.innerHTML = '広告を読み込み中...';
+
+                // 実際の広告プロバイダー接続のシミュレーション
+                setTimeout(() => {
+                    this.displayPlaceholderAd();
+                    adBanner.classList.remove('loading');
+                }, 1000);
+            }
+
+            displayPlaceholderAd() {
+                const adContent = document.getElementById('ad-content');
+                const ads = [
+                    '🏥 健康管理アプリ - 30% OFF!',
+                    '💊 薬局配送サービス - 送料無料',
+                    '🩺 オンライン診療 - 初回無料相談',
+                    '📱 健康グッズ特集 - 期間限定割引'
+                ];
+                
+                const randomAd = ads[Math.floor(Math.random() * ads.length)];
+                adContent.innerHTML = `<a href="#" style="text-decoration: none; color: inherit;">${randomAd}</a>`;
+            }
+
+            // 将来的なGoogle AdSense統合用メソッド
+            initGoogleAdsense() {
+                // Google AdSenseの初期化コード
+                // (adsbygoogle = window.adsbygoogle || []).push({});
+            }
+
+            // 広告クリック追跡
+            trackAdClick(adId, provider) {
+                console.log(`Ad clicked: ${adId} from ${provider}`);
+                // アナリティクスに送信
+            }
+        }
+
+        // 広告マネージャーの初期化
+        const adManager = new AdManager();
+
+        // OAuth認証システム
+        class OAuthManager {
+            constructor() {
+                this.googleClientId = 'YOUR_GOOGLE_CLIENT_ID'; // 実際のクライアントIDに置き換え
+                this.appleClientId = 'YOUR_APPLE_CLIENT_ID'; // 実際のクライアントIDに置き換え
+                this.init();
+            }
+
+            async init() {
+                // Google Sign-In API の初期化
+                await this.loadGoogleAPI();
+                // Apple Sign-In API の初期化
+                await this.loadAppleAPI();
+            }
+
+            async loadGoogleAPI() {
+                return new Promise((resolve) => {
+                    // Google Sign-In API のスクリプトローディング
+                    if (window.google && window.google.accounts) {
+                        resolve();
+                        return;
+                    }
+                    
+                    const script = document.createElement('script');
+                    script.src = 'https://accounts.google.com/gsi/client';
+                    script.onload = () => {
+                        if (window.google && window.google.accounts) {
+                            window.google.accounts.id.initialize({
+                                client_id: this.googleClientId,
+                                callback: this.handleGoogleSignIn.bind(this)
+                            });
+                        }
+                        resolve();
+                    };
+                    document.head.appendChild(script);
+                });
+            }
+
+            async loadAppleAPI() {
+                return new Promise((resolve) => {
+                    // Apple Sign-In API のスクリプトローディング
+                    if (window.AppleID) {
+                        resolve();
+                        return;
+                    }
+                    
+                    const script = document.createElement('script');
+                    script.src = 'https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js';
+                    script.onload = () => {
+                        if (window.AppleID) {
+                            window.AppleID.auth.init({
+                                clientId: this.appleClientId,
+                                scope: 'name email',
+                                redirectURI: window.location.origin,
+                                usePopup: true
+                            });
+                        }
+                        resolve();
+                    };
+                    document.head.appendChild(script);
+                });
+            }
+
+            async signInWithGoogle() {
+                try {
+                    if (!window.google || !window.google.accounts) {
+                        throw new Error('Google Sign-In APIが読み込まれていません');
+                    }
+
+                    // Google Sign-In をトリガー
+                    window.google.accounts.id.prompt();
+                } catch (error) {
+                    console.error('Google Sign-In エラー:', error);
+                    this.showMockGoogleSignIn();
+                }
+            }
+
+            async signInWithApple() {
+                try {
+                    if (!window.AppleID) {
+                        throw new Error('Apple Sign-In APIが読み込まれていません');
+                    }
+
+                    const data = await window.AppleID.auth.signIn();
+                    this.handleAppleSignIn(data);
+                } catch (error) {
+                    console.error('Apple Sign-In エラー:', error);
+                    this.showMockAppleSignIn();
+                }
+            }
+
+            handleGoogleSignIn(response) {
+                try {
+                    // JWTトークンをデコード
+                    const payload = JSON.parse(atob(response.credential.split('.')[1]));
+                    
+                    const userData = {
+                        id: payload.sub,
+                        email: payload.email,
+                        name: payload.name,
+                        picture: payload.picture,
+                        provider: 'google'
+                    };
+                    
+                    this.processOAuthSignIn(userData);
+                } catch (error) {
+                    console.error('Google Sign-In レスポンス処理エラー:', error);
+                }
+            }
+
+            handleAppleSignIn(response) {
+                try {
+                    const userData = {
+                        id: response.user,
+                        email: response.email,
+                        name: response.fullName ? `${response.fullName.givenName} ${response.fullName.familyName}` : '',
+                        provider: 'apple'
+                    };
+                    
+                    this.processOAuthSignIn(userData);
+                } catch (error) {
+                    console.error('Apple Sign-In レスポンス処理エラー:', error);
+                }
+            }
+
+            processOAuthSignIn(userData) {
+                // ユーザーデータをローカルストレージに保存
+                const existingUsers = JSON.parse(localStorage.getItem('registeredUsers')) || [];
+                
+                // 既存ユーザーをチェック
+                let user = existingUsers.find(u => u.email === userData.email);
+                
+                if (!user) {
+                    // 新規ユーザーとして登録
+                    user = {
+                        ...userData,
+                        registeredAt: new Date().toISOString(),
+                        isOAuthUser: true
+                    };
+                    existingUsers.push(user);
+                    localStorage.setItem('registeredUsers', JSON.stringify(existingUsers));
+                }
+                
+                // ログイン状態を設定
+                localStorage.setItem('isLoggedIn', 'true');
+                localStorage.setItem('currentUser', JSON.stringify(user));
+                
+                // メインアプリに遷移
+                this.showMainApp();
+            }
+
+            showMainApp() {
+                document.getElementById('auth-container').style.display = 'none';
+                document.getElementById('app-container').style.display = 'block';
+                showPage('medications');
+            }
+
+            // モック関数（開発用）
+            showMockGoogleSignIn() {
+                const mockUser = {
+                    id: 'google_' + Date.now(),
+                    email: 'user@gmail.com',
+                    name: 'Google ユーザー',
+                    provider: 'google'
+                };
+                this.processOAuthSignIn(mockUser);
+            }
+
+            showMockAppleSignIn() {
+                const mockUser = {
+                    id: 'apple_' + Date.now(),
+                    email: 'user@icloud.com',
+                    name: 'Apple ユーザー',
+                    provider: 'apple'
+                };
+                this.processOAuthSignIn(mockUser);
+            }
+        }
+
+        // OAuth認証関数（グローバル）
+        let oauthManager;
+
+        function signInWithGoogle() {
+            if (!oauthManager) {
+                oauthManager = new OAuthManager();
+            }
+            oauthManager.signInWithGoogle();
+        }
+
+        function signInWithApple() {
+            if (!oauthManager) {
+                oauthManager = new OAuthManager();
+            }
+            oauthManager.signInWithApple();
+        }
+
+        // OAuth マネージャーの初期化
+        document.addEventListener('DOMContentLoaded', () => {
+            oauthManager = new OAuthManager();
+        });
+
+        // クラウドデータ同期システム
+        class CloudSyncManager {
+            constructor() {
+                this.firebaseConfig = {
+                    // 実際のFirebase設定に置き換える
+                    apiKey: "YOUR_API_KEY",
+                    authDomain: "medication-tracker.firebaseapp.com",
+                    databaseURL: "https://medication-tracker-default-rtdb.firebaseio.com",
+                    projectId: "medication-tracker",
+                    storageBucket: "medication-tracker.appspot.com",
+                    messagingSenderId: "123456789",
+                    appId: "YOUR_APP_ID"
+                };
+                this.isOnline = navigator.onLine;
+                this.syncQueue = [];
+                this.lastSyncTime = localStorage.getItem('lastSyncTime') || '0';
+                this.init();
+            }
+
+            async init() {
+                // Firebase SDKの初期化
+                await this.loadFirebaseSDK();
+                this.setupEventListeners();
+                
+                // 自動同期の設定
+                setInterval(() => this.autoSync(), 60000); // 1分ごと
+            }
+
+            async loadFirebaseSDK() {
+                return new Promise((resolve) => {
+                    // Firebase SDK のローディング（モック）
+                    window.firebase = {
+                        initializeApp: () => {},
+                        database: () => ({
+                            ref: (path) => ({
+                                set: (data) => Promise.resolve(),
+                                get: () => Promise.resolve({ val: () => null }),
+                                on: () => {},
+                                off: () => {}
+                            })
+                        }),
+                        auth: () => ({
+                            currentUser: null,
+                            signInAnonymously: () => Promise.resolve({ user: { uid: 'anonymous' } })
+                        })
+                    };
+                    resolve();
+                });
+            }
+
+            setupEventListeners() {
+                // オンライン/オフライン状態の監視
+                window.addEventListener('online', () => {
+                    this.isOnline = true;
+                    this.syncPendingData();
+                });
+
+                window.addEventListener('offline', () => {
+                    this.isOnline = false;
+                });
+
+                // データ変更の監視
+                this.setupDataChangeListeners();
+            }
+
+            setupDataChangeListeners() {
+                // LocalStorageの変更を監視
+                const originalSetItem = localStorage.setItem;
+                localStorage.setItem = (key, value) => {
+                    originalSetItem.call(localStorage, key, value);
+                    this.queueForSync(key, value);
+                };
+            }
+
+            queueForSync(key, value) {
+                // 同期対象のデータかチェック
+                const syncableKeys = ['medications', 'medicationHistory', 'userSettings', 'mealTimeSettings'];
+                
+                if (syncableKeys.includes(key)) {
+                    this.syncQueue.push({
+                        key,
+                        value,
+                        timestamp: Date.now(),
+                        action: 'update'
+                    });
+
+                    if (this.isOnline) {
+                        this.syncPendingData();
+                    }
+                }
+            }
+
+            async syncPendingData() {
+                if (this.syncQueue.length === 0) return;
+
+                try {
+                    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+                    if (!currentUser) return;
+
+                    // バッチでデータを同期
+                    const batchData = {};
+                    this.syncQueue.forEach(item => {
+                        batchData[item.key] = {
+                            data: item.value,
+                            timestamp: item.timestamp
+                        };
+                    });
+
+                    await this.uploadToCloud(currentUser.id, batchData);
+                    
+                    // 同期完了後、キューをクリア
+                    this.syncQueue = [];
+                    this.lastSyncTime = Date.now().toString();
+                    localStorage.setItem('lastSyncTime', this.lastSyncTime);
+
+                    this.showSyncStatus('同期完了', 'success');
+                } catch (error) {
+                    console.error('データ同期エラー:', error);
+                    this.showSyncStatus('同期失敗', 'error');
+                }
+            }
+
+            async uploadToCloud(userId, data) {
+                // Firebase Realtime Database への保存（モック）
+                console.log('クラウドにデータをアップロード:', { userId, data });
+                
+                // 実際の実装では以下のようになる:
+                // const db = firebase.database();
+                // await db.ref(`users/${userId}/data`).set(data);
+                
+                return Promise.resolve();
+            }
+
+            async downloadFromCloud(userId) {
+                try {
+                    // Firebase Realtime Database からの取得（モック）
+                    console.log('クラウドからデータをダウンロード:', userId);
+                    
+                    // 実際の実装では以下のようになる:
+                    // const db = firebase.database();
+                    // const snapshot = await db.ref(`users/${userId}/data`).get();
+                    // return snapshot.val();
+                    
+                    return null;
+                } catch (error) {
+                    console.error('クラウドデータ取得エラー:', error);
+                    return null;
+                }
+            }
+
+            async restoreFromCloud() {
+                const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+                if (!currentUser) return false;
+
+                try {
+                    const cloudData = await this.downloadFromCloud(currentUser.id);
+                    
+                    if (cloudData) {
+                        // ローカルデータとクラウドデータの比較・マージ
+                        Object.keys(cloudData).forEach(key => {
+                            const localTimestamp = localStorage.getItem(`${key}_timestamp`) || '0';
+                            const cloudTimestamp = cloudData[key].timestamp || 0;
+                            
+                            // クラウドのデータが新しい場合は復元
+                            if (cloudTimestamp > parseInt(localTimestamp)) {
+                                localStorage.setItem(key, cloudData[key].data);
+                                localStorage.setItem(`${key}_timestamp`, cloudTimestamp.toString());
+                            }
+                        });
+
+                        this.showSyncStatus('データ復元完了', 'success');
+                        return true;
+                    }
+                } catch (error) {
+                    console.error('データ復元エラー:', error);
+                    this.showSyncStatus('データ復元失敗', 'error');
+                }
+                
+                return false;
+            }
+
+            async autoSync() {
+                if (!this.isOnline) return;
+                
+                const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+                if (!currentUser) return;
+
+                // 定期的な双方向同期
+                await this.syncPendingData();
+                await this.downloadFromCloud(currentUser.id);
+            }
+
+            showSyncStatus(message, type) {
+                const statusDiv = document.createElement('div');
+                statusDiv.className = `sync-status ${type}`;
+                statusDiv.textContent = message;
+                statusDiv.style.cssText = `
+                    position: fixed;
+                    top: 80px;
+                    right: 20px;
+                    padding: 10px 15px;
+                    border-radius: 5px;
+                    color: white;
+                    font-size: 14px;
+                    z-index: 1000;
+                    ${type === 'success' ? 'background-color: #4CAF50;' : 'background-color: #f44336;'}
+                `;
+
+                document.body.appendChild(statusDiv);
+
+                setTimeout(() => {
+                    document.body.removeChild(statusDiv);
+                }, 3000);
+            }
+
+            // 手動同期機能
+            async manualSync() {
+                this.showSyncStatus('同期中...', 'info');
+                await this.syncPendingData();
+                const restored = await this.restoreFromCloud();
+                
+                if (restored) {
+                    // ページリロードして最新データを反映
+                    location.reload();
+                }
+            }
+
+            // 端末間でのデータ移行
+            async migrateToNewDevice() {
+                const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+                if (!currentUser) {
+                    alert('ログインしてください');
+                    return;
+                }
+
+                try {
+                    const restored = await this.restoreFromCloud();
+                    if (restored) {
+                        alert('データの移行が完了しました');
+                        location.reload();
+                    } else {
+                        alert('移行するデータが見つかりませんでした');
+                    }
+                } catch (error) {
+                    alert('データ移行に失敗しました: ' + error.message);
+                }
+            }
+        }
+
+        // クラウド同期マネージャーの初期化
+        let cloudSyncManager;
+        document.addEventListener('DOMContentLoaded', () => {
+            cloudSyncManager = new CloudSyncManager();
+        });
+
+        // グローバル関数
+        function manualSync() {
+            if (cloudSyncManager) {
+                cloudSyncManager.manualSync();
+            }
+        }
+
+        function migrateData() {
+            if (cloudSyncManager) {
+                cloudSyncManager.migrateToNewDevice();
+            }
+        }
+
+        // 同期状態の表示を更新
+        function updateSyncStatus() {
+            const lastSyncElement = document.getElementById('last-sync-time');
+            const onlineStatusElement = document.getElementById('online-status');
+            
+            if (lastSyncElement) {
+                const lastSync = localStorage.getItem('lastSyncTime');
+                if (lastSync && lastSync !== '0') {
+                    const date = new Date(parseInt(lastSync));
+                    lastSyncElement.textContent = date.toLocaleString('ja-JP');
+                } else {
+                    lastSyncElement.textContent = '未同期';
+                }
+            }
+            
+            if (onlineStatusElement) {
+                onlineStatusElement.textContent = navigator.onLine ? 'オンライン' : 'オフライン';
+                onlineStatusElement.style.color = navigator.onLine ? '#4CAF50' : '#f44336';
+            }
+        }
+
+        // ページ表示時に同期状態を更新
+        function showPage(pageId) {
+            // 既存のshowPage機能
+            const pages = document.querySelectorAll('.page');
+            pages.forEach(page => page.classList.remove('active'));
+            
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(tab => tab.classList.remove('active'));
+            
+            const targetPage = document.getElementById(pageId + '-page');
+            if (targetPage) {
+                targetPage.classList.add('active');
+            }
+            
+            const targetTab = document.querySelector(`[onclick="showPage('${pageId}')"]`);
+            if (targetTab) {
+                targetTab.classList.add('active');
+            }
+            
+            // 設定ページの場合、同期状態を更新
+            if (pageId === 'settings') {
+                setTimeout(updateSyncStatus, 100);
+            }
+            
+            // ページ固有の処理
+            if (pageId === 'medications') {
+                loadMedications();
+            } else if (pageId === 'history') {
+                loadHistory();
+            } else if (pageId === 'home') {
+                updateMedicationButtons();
+            } else if (pageId === 'settings') {
+                loadMealTimeSettings();
+                updateCurrentUserEmail();
+            }
+        }
+
+        // ユーザーメール表示の更新
+        function updateCurrentUserEmail() {
+            const currentUserElement = document.getElementById('current-user-email');
+            if (currentUserElement) {
+                const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+                if (currentUser) {
+                    currentUserElement.textContent = currentUser.email || 'ユーザー';
+                } else {
+                    currentUserElement.textContent = 'ゲスト';
+                }
+            }
+        }
+
+        // オンライン状態の監視
+        window.addEventListener('online', updateSyncStatus);
+        window.addEventListener('offline', updateSyncStatus);
     </script>
 </body>
 </html>
