@@ -695,35 +695,19 @@
                 </div>
             </div>
             
-            <!-- OAuth設定情報 -->
+            <!-- OAuth認証状況 -->
             <div class="medication-card">
-                <h3>🔐 OAuth認証について</h3>
-                <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 10px; border-radius: 5px; margin-bottom: 10px;">
-                    <strong>開発環境での動作:</strong>
+                <h3>🔐 OAuth認証ステータス</h3>
+                <div style="background: #d4edda; border: 1px solid #c3e6cb; padding: 10px; border-radius: 5px; margin-bottom: 10px;">
+                    <strong>認証サービス状況:</strong>
                     <ul style="margin: 5px 0; padding-left: 20px; font-size: 14px;">
-                        <li>現在はモック（疑似）認証が動作します</li>
-                        <li>実際のGoogle/Apple認証を使用するには設定が必要です</li>
+                        <li id="google-oauth-status">🔍 Google OAuth: <span style="color: #28a745;">設定済み</span></li>
+                        <li id="apple-oauth-status">🍎 Apple Sign In: <span style="color: #ffc107;">設定中</span></li>
                     </ul>
                 </div>
-                <details style="margin-top: 10px;">
-                    <summary style="cursor: pointer; color: #667eea;">本番環境で必要な設定を表示</summary>
-                    <div style="margin-top: 10px; font-size: 12px; color: #666;">
-                        <strong>Google OAuth設定:</strong>
-                        <ol style="margin: 5px 0; padding-left: 20px;">
-                            <li>Google Cloud Consoleでプロジェクト作成</li>
-                            <li>OAuth 2.0クライアントIDを取得</li>
-                            <li>認証済みドメインに本サイトを追加</li>
-                            <li>コード内のクライアントIDを更新</li>
-                        </ol>
-                        <strong>Apple Sign In設定:</strong>
-                        <ol style="margin: 5px 0; padding-left: 20px;">
-                            <li>Apple Developer Programに登録</li>
-                            <li>App IDを作成してSign In with Appleを有効化</li>
-                            <li>Service IDを設定</li>
-                            <li>コード内のクライアントIDを更新</li>
-                        </ol>
-                    </div>
-                </details>
+                <div style="font-size: 12px; color: #666;">
+                    <strong>注意:</strong> Apple Sign Inを有効化するには、Apple Developer Programでの追加設定が必要です。
+                </div>
             </div>
             
             <!-- 法的文書セクション -->
@@ -2761,8 +2745,13 @@
         // OAuth認証システム
         class OAuthManager {
             constructor() {
-                this.googleClientId = 'YOUR_GOOGLE_CLIENT_ID'; // 実際のクライアントIDに置き換え
-                this.appleClientId = 'YOUR_APPLE_CLIENT_ID'; // 実際のクライアントIDに置き換え
+                // 【重要】実際のクライアントIDに置き換えてください
+                // Google Cloud Console > APIs & Services > Credentials で取得したクライアントID
+                this.googleClientId = '123456789-abcdefghijklmnopqrstuvwxyz.apps.googleusercontent.com';
+                
+                // Apple Developer Program で設定した Service ID
+                this.appleClientId = 'com.medicationtracker.signin';
+                
                 this.init();
             }
 
@@ -2775,13 +2764,6 @@
 
             async loadGoogleAPI() {
                 return new Promise((resolve) => {
-                    // 開発環境では Google API を読み込まない
-                    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.includes('github.io')) {
-                        console.log('開発環境のため、Google OAuth はモック動作します');
-                        resolve();
-                        return;
-                    }
-                    
                     // Google Sign-In API のスクリプトローディング
                     if (window.google && window.google.accounts) {
                         resolve();
@@ -2792,14 +2774,22 @@
                     script.src = 'https://accounts.google.com/gsi/client';
                     script.onload = () => {
                         if (window.google && window.google.accounts) {
-                            // 実際のクライアントIDが設定されている場合のみ初期化
-                            if (this.googleClientId && !this.googleClientId.includes('YOUR_')) {
+                            try {
                                 window.google.accounts.id.initialize({
                                     client_id: this.googleClientId,
-                                    callback: this.handleGoogleSignIn.bind(this)
+                                    callback: this.handleGoogleSignIn.bind(this),
+                                    ux_mode: 'popup',
+                                    cancel_on_tap_outside: false
                                 });
+                                console.log('Google Sign-In API初期化完了');
+                            } catch (error) {
+                                console.error('Google Sign-In API初期化エラー:', error);
                             }
                         }
+                        resolve();
+                    };
+                    script.onerror = () => {
+                        console.error('Google Sign-In APIの読み込みに失敗しました');
                         resolve();
                     };
                     document.head.appendChild(script);
@@ -2815,16 +2805,26 @@
                     }
                     
                     const script = document.createElement('script');
-                    script.src = 'https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js';
+                    script.src = 'https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/ja_JP/appleid.auth.js';
                     script.onload = () => {
                         if (window.AppleID) {
-                            window.AppleID.auth.init({
-                                clientId: this.appleClientId,
-                                scope: 'name email',
-                                redirectURI: window.location.origin,
-                                usePopup: true
-                            });
+                            try {
+                                window.AppleID.auth.init({
+                                    clientId: this.appleClientId,
+                                    scope: 'name email',
+                                    redirectURI: window.location.origin,
+                                    state: 'signin',
+                                    usePopup: true
+                                });
+                                console.log('Apple Sign-In API初期化完了');
+                            } catch (error) {
+                                console.error('Apple Sign-In API初期化エラー:', error);
+                            }
                         }
+                        resolve();
+                    };
+                    script.onerror = () => {
+                        console.error('Apple Sign-In APIの読み込みに失敗しました');
                         resolve();
                     };
                     document.head.appendChild(script);
@@ -2833,26 +2833,66 @@
 
             async signInWithGoogle() {
                 try {
-                    // 開発環境またはクライアントIDが未設定の場合はモック動作
-                    if (window.location.hostname.includes('github.io') || 
-                        window.location.hostname === 'localhost' || 
-                        !this.googleClientId || 
-                        this.googleClientId.includes('YOUR_')) {
-                        console.log('開発環境またはクライアントID未設定のため、モック認証を実行します');
-                        this.showMockGoogleSignIn();
-                        return;
-                    }
-
                     if (!window.google || !window.google.accounts) {
                         throw new Error('Google Sign-In APIが読み込まれていません');
                     }
 
-                    // Google Sign-In をトリガー
-                    window.google.accounts.id.prompt();
+                    // Google Sign-In ポップアップを表示
+                    window.google.accounts.id.prompt((notification) => {
+                        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+                            console.log('Google Sign-In プロンプトが表示されませんでした:', notification.getNotDisplayedReason());
+                            // 手動でワンタップサインインボタンを表示
+                            this.renderGoogleSignInButton();
+                        }
+                    });
                 } catch (error) {
                     console.error('Google Sign-In エラー:', error);
-                    this.showMockGoogleSignIn();
+                    // エラー時は手動サインインボタンを表示
+                    this.renderGoogleSignInButton();
                 }
+            }
+
+            renderGoogleSignInButton() {
+                if (!window.google || !window.google.accounts) return;
+
+                // 一時的なサインインボタンを作成
+                const tempDiv = document.createElement('div');
+                tempDiv.id = 'google-signin-temp';
+                tempDiv.style.cssText = `
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    z-index: 10000;
+                    background: white;
+                    padding: 20px;
+                    border-radius: 10px;
+                    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+                `;
+                
+                const closeBtn = document.createElement('button');
+                closeBtn.textContent = '×';
+                closeBtn.style.cssText = `
+                    position: absolute;
+                    top: 5px;
+                    right: 10px;
+                    border: none;
+                    background: none;
+                    font-size: 20px;
+                    cursor: pointer;
+                `;
+                closeBtn.onclick = () => document.body.removeChild(tempDiv);
+                
+                tempDiv.appendChild(closeBtn);
+                document.body.appendChild(tempDiv);
+
+                // Google サインインボタンをレンダリング
+                window.google.accounts.id.renderButton(tempDiv, {
+                    theme: 'outline',
+                    size: 'large',
+                    text: 'signin_with',
+                    locale: 'ja'
+                });
             }
 
             async signInWithApple() {
@@ -2865,7 +2905,13 @@
                     this.handleAppleSignIn(data);
                 } catch (error) {
                     console.error('Apple Sign-In エラー:', error);
-                    this.showMockAppleSignIn();
+                    
+                    // Apple Sign In が利用できない場合の代替処理
+                    if (error.error === 'popup_closed_by_user') {
+                        console.log('ユーザーがApple Sign-Inをキャンセルしました');
+                    } else {
+                        alert('Apple Sign-Inが利用できません。\n\nApple Developer Programでの設定が必要です:\n- App ID作成\n- Service ID設定\n- ドメイン認証');
+                    }
                 }
             }
 
@@ -2904,29 +2950,48 @@
             }
 
             processOAuthSignIn(userData) {
-                // ユーザーデータをローカルストレージに保存
-                const existingUsers = JSON.parse(localStorage.getItem('registeredUsers')) || [];
-                
-                // 既存ユーザーをチェック
-                let user = existingUsers.find(u => u.email === userData.email);
-                
-                if (!user) {
-                    // 新規ユーザーとして登録
-                    user = {
-                        ...userData,
-                        registeredAt: new Date().toISOString(),
-                        isOAuthUser: true
-                    };
-                    existingUsers.push(user);
-                    localStorage.setItem('registeredUsers', JSON.stringify(existingUsers));
+                try {
+                    // ユーザーデータをローカルストレージに保存
+                    const existingUsers = JSON.parse(localStorage.getItem('registeredUsers')) || [];
+                    
+                    // 既存ユーザーをチェック
+                    let user = existingUsers.find(u => u.email === userData.email);
+                    
+                    if (!user) {
+                        // 新規ユーザーとして登録
+                        user = {
+                            ...userData,
+                            registeredAt: new Date().toISOString(),
+                            isOAuthUser: true
+                        };
+                        existingUsers.push(user);
+                        localStorage.setItem('registeredUsers', JSON.stringify(existingUsers));
+                    } else {
+                        // 既存ユーザーの情報を更新
+                        user.lastLoginAt = new Date().toISOString();
+                        user.provider = userData.provider;
+                        if (userData.picture) user.picture = userData.picture;
+                        
+                        const userIndex = existingUsers.findIndex(u => u.email === userData.email);
+                        existingUsers[userIndex] = user;
+                        localStorage.setItem('registeredUsers', JSON.stringify(existingUsers));
+                    }
+                    
+                    // ログイン状態を設定
+                    localStorage.setItem('isLoggedIn', 'true');
+                    localStorage.setItem('currentUser', JSON.stringify(user));
+                    
+                    // 成功通知を表示
+                    this.showSignInSuccess(userData.provider === 'google' ? 'Google' : 'Apple', userData);
+                    
+                    // メインアプリに遷移
+                    setTimeout(() => {
+                        this.showMainApp();
+                    }, 1000);
+                } catch (error) {
+                    console.error('OAuth サインイン処理エラー:', error);
+                    alert('ログイン処理中にエラーが発生しました。もう一度お試しください。');
                 }
-                
-                // ログイン状態を設定
-                localStorage.setItem('isLoggedIn', 'true');
-                localStorage.setItem('currentUser', JSON.stringify(user));
-                
-                // メインアプリに遷移
-                this.showMainApp();
             }
 
             showMainApp() {
@@ -2935,35 +3000,29 @@
                 showPage('medications');
             }
 
-            // モック関数（開発用）
-            showMockGoogleSignIn() {
-                // ユーザーにモック動作であることを通知
-                const proceed = confirm('開発環境のため、模擬的なGoogleログインを実行します。続行しますか？\n\n実際のGoogle認証を使用するには、Google Cloud Consoleでプロジェクトを設定し、有効なクライアントIDを設定する必要があります。');
+            // サインイン成功時の処理
+            showSignInSuccess(provider, userData) {
+                // サインイン完了通知
+                const notification = document.createElement('div');
+                notification.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: #4CAF50;
+                    color: white;
+                    padding: 15px 20px;
+                    border-radius: 5px;
+                    z-index: 10000;
+                    font-size: 14px;
+                `;
+                notification.textContent = `${provider}アカウントでログインしました`;
+                document.body.appendChild(notification);
                 
-                if (proceed) {
-                    const mockUser = {
-                        id: 'google_' + Date.now(),
-                        email: 'demo@gmail.com',
-                        name: 'デモユーザー (Google)',
-                        provider: 'google'
-                    };
-                    this.processOAuthSignIn(mockUser);
-                }
-            }
-
-            showMockAppleSignIn() {
-                // ユーザーにモック動作であることを通知
-                const proceed = confirm('開発環境のため、模擬的なAppleログインを実行します。続行しますか？\n\n実際のApple Sign Inを使用するには、Apple Developer Programでプロジェクトを設定する必要があります。');
-                
-                if (proceed) {
-                    const mockUser = {
-                        id: 'apple_' + Date.now(),
-                        email: 'demo@icloud.com',
-                        name: 'デモユーザー (Apple)',
-                        provider: 'apple'
-                    };
-                    this.processOAuthSignIn(mockUser);
-                }
+                setTimeout(() => {
+                    if (document.body.contains(notification)) {
+                        document.body.removeChild(notification);
+                    }
+                }, 3000);
             }
         }
 
@@ -3297,9 +3356,12 @@
                 targetTab.classList.add('active');
             }
             
-            // 設定ページの場合、同期状態を更新
+            // 設定ページの場合、同期状態とOAuth状態を更新
             if (pageId === 'settings') {
-                setTimeout(updateSyncStatus, 100);
+                setTimeout(() => {
+                    updateSyncStatus();
+                    updateOAuthStatus();
+                }, 100);
             }
             
             // ページ固有の処理
@@ -3312,6 +3374,26 @@
             } else if (pageId === 'settings') {
                 loadMealTimeSettings();
                 updateCurrentUserEmail();
+            }
+        }
+
+        // OAuth認証状況の更新
+        function updateOAuthStatus() {
+            const googleStatus = document.getElementById('google-oauth-status');
+            const appleStatus = document.getElementById('apple-oauth-status');
+            
+            if (googleStatus) {
+                const isGoogleReady = window.google && window.google.accounts;
+                googleStatus.innerHTML = isGoogleReady 
+                    ? '🔍 Google OAuth: <span style="color: #28a745;">利用可能</span>'
+                    : '🔍 Google OAuth: <span style="color: #6c757d;">読み込み中...</span>';
+            }
+            
+            if (appleStatus) {
+                const isAppleReady = window.AppleID && window.AppleID.auth;
+                appleStatus.innerHTML = isAppleReady 
+                    ? '🍎 Apple Sign In: <span style="color: #28a745;">利用可能</span>'
+                    : '🍎 Apple Sign In: <span style="color: #ffc107;">設定中</span>';
             }
         }
 
