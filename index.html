@@ -1407,12 +1407,13 @@
                             }
                             
                             // その日に既に服用済み、スキップ済みかチェック
-                            const history = JSON.parse(localStorage.getItem('medicationHistory') || '[]');
-                            const isTakenOnDate = history.some(h => 
-                                h.medicationId === med.id && 
+                            const medicationHistory = JSON.parse(localStorage.getItem('history') || '[]');
+                            const isTakenOnDate = medicationHistory.some(h => 
+                                h.medicationId == med.id && // == を使用して型変換を許可
                                 h.mealTime === meal && 
-                                new Date(h.date).toDateString() === checkDateStr &&
-                                (h.action === 'taken' || h.action === 'skipped')
+                                new Date(h.date || h.takenAt).toDateString() === checkDateStr &&
+                                !h.cancelled &&
+                                (h.action === 'taken' || h.action === 'skipped' || !h.action)
                             );
                             
                             if (isTakenOnDate) {
@@ -1605,9 +1606,10 @@
         // 今日服用済みかチェック（スキップも含む）
         function isTakenToday(medId, mealTime) {
             const today = new Date().toDateString();
-            return history.some(h => {
+            const medicationHistory = JSON.parse(localStorage.getItem('history') || '[]');
+            return medicationHistory.some(h => {
                 const takenDate = new Date(h.date || h.takenAt).toDateString();
-                return h.medicationId === medId && 
+                return h.medicationId == medId && // == を使用して型変換を許可
                        takenDate === today && 
                        h.mealTime === mealTime &&
                        !h.cancelled && // 取り消されていない履歴のみ
@@ -2366,7 +2368,8 @@
                 
                 // 履歴に追加　
                 const historyItem = {
-                    medicationId: currentMedId,
+                    id: Date.now() + Math.random(), // 一意のID
+                    medicationId: parseInt(currentMedId), // 数値に変換
                     medicationName: med.name,
                     dosage: takingAmount + document.getElementById('confirm-dosage-unit').textContent,
                     takenAt: new Date().toISOString(),
@@ -2417,7 +2420,8 @@
             
             // スキップ履歴を追加（在庫は減らさない）
             const historyItem = {
-                medicationId: medId,
+                id: Date.now() + Math.random(), // 一意のID
+                medicationId: parseInt(medId), // 数値に変換
                 medicationName: med.name,
                 dosage: med.dosage || '1錠',
                 takenAt: new Date().toISOString(),
@@ -2442,6 +2446,7 @@
             
             // UIを更新（警告が消える）
             updateTodayMedications();
+            updateHistoryList(); // 履歴も更新
             
             alert(`✅ ${med.name} - ${mealTime}をスキップしました。`);
         }
