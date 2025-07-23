@@ -145,6 +145,25 @@
             cursor: not-allowed;
         }
         
+        .skip-button {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            flex: 1;
+            transition: all 0.3s ease;
+        }
+        
+        .skip-button:hover {
+            background: #5a6268;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(108, 117, 125, 0.3);
+        }
+        
         .add-button {
             position: fixed;
             bottom: 80px;
@@ -818,6 +837,7 @@
                         <option value="夕食後">夕食後</option>
                         <option value="朝夕食後">朝夕食後</option>
                         <option value="就寝前">就寝前</option>
+                        <option value="毎食後＋就寝前">毎食後＋就寝前</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -953,6 +973,7 @@
         // カメラ関連の変数
         let currentMedId = null;
         let currentMealTime = null;
+        let currentOverdueDate = null;
         let cameraStream = null;
         
         // ページ切り替え
@@ -1145,7 +1166,24 @@
             hideAddModal();
             removeMedicationPhoto();
             updateMedicationsList();
-            showPage('medications');
+            updateTodayMedications(); // 新規登録時にも今日の服薬を更新
+            
+            // 新規登録した薬が現在の服用時間に該当する場合はホーム画面を表示
+            if (editId) {
+                showPage('medications');
+            } else {
+                const currentMealTime = getCurrentMealTime();
+                const newMed = medications[medications.length - 1];
+                const nextMedTime = getNextMedicationTime(newMed);
+                
+                // 登録日当日で、現在の服用時間に該当する場合
+                if (currentMealTime && nextMedTime.canShowToday && 
+                    nextMedTime.nextTimes.some(nt => nt.mealName === currentMealTime)) {
+                    showPage('home');
+                } else {
+                    showPage('medications');
+                }
+            }
         });
         
         // 食事時間設定を保存
@@ -1263,6 +1301,9 @@
                 case '就寝前':
                     nextTimes = [timeMap['就寝前']];
                     break;
+                case '毎食後＋就寝前':
+                    nextTimes = [timeMap['朝食後'], timeMap['昼食後'], timeMap['夕食後'], timeMap['就寝前']];
+                    break;
             }
             
             // 登録時刻以降の次回服用時刻を見つける
@@ -1340,38 +1381,67 @@
                 '就寝前': toMinutes(settings.bedtime)
             };
             
-            // 過去2時間以内に服用すべきだった薬を取得（登録日時を考慮）
+            // 過去の未服用薬を取得（翌日以降も表示し続ける）
             const overdueWarnings = [];
-            for (const [meal, time] of Object.entries(mealTimes)) {
-                if (currentTime >= time + 120) { // 2時間以上経過
-                    const overdueMeds = medications.filter(med => {
-                        // 基本的な服用頻度チェック
-                        const isThisMealTime = med.frequency === '毎食後' || 
-                               med.frequency === meal ||
-                               (med.frequency === '朝夕食後' && (meal === '朝食後' || meal === '夕食後'));
+            const today = new Date();
+            
+            // 今日と過去7日間の未服用薬をチェック
+            for (let dayOffset = 0; dayOffset <= 7; dayOffset++) {
+                const checkDate = new Date(today);
+                checkDate.setDate(today.getDate() - dayOffset);
+                const checkDateStr = checkDate.toDateString();
+                
+                for (const [meal, time] of Object.entries(mealTimes)) {
+                    // 今日の場合は2時間経過したもののみ、過去の日付は全て対象
+                    const shouldShow = dayOffset === 0 ? (currentTime >= time + 120) : true;
+                    
+                    if (shouldShow) {
+                        const overdueMeds = medications.filter(med => {
+                            // 基本的な服用頻度チェック
+                            const isThisMealTime = med.frequency === '毎食後' || 
+                                   med.frequency === meal ||
+                                   (med.frequency === '朝夕食後' && (meal === '朝食後' || meal === '夕食後'));
+                            
+                            if (!isThisMealTime) {
+                                return false;
+                            }
+                            
+                            // その日に既に服用済み、スキップ済みかチェック
+                            const history = JSON.parse(localStorage.getItem('medicationHistory') || '[]');
+                            const isTakenOnDate = history.some(h => 
+                                h.medicationId === med.id && 
+                                h.mealTime === meal && 
+                                new Date(h.date).toDateString() === checkDateStr &&
+                                (h.action === 'taken' || h.action === 'skipped')
+                            );
+                            
+                            if (isTakenOnDate) {
+                                return false;
+                            }
+                            
+                            // 登録日より前の日は対象外
+                            const registeredAt = new Date(med.createdAt || checkDate);
+                            if (checkDate < registeredAt) {
+                                return false;
+                            }
+                            
+                            // 登録日当日の場合は、登録時刻以降の服用時間のみ対象
+                            if (registeredAt.toDateString() === checkDateStr) {
+                                const mealTimeMinutes = time;
+                                const registeredTimeMinutes = registeredAt.getHours() * 60 + registeredAt.getMinutes();
+                                return mealTimeMinutes > registeredTimeMinutes;
+                            }
+                            
+                            return true;
+                        });
                         
-                        if (!isThisMealTime || isTakenToday(med.id, meal)) {
-                            return false;
-                        }
-                        
-                        // 登録日時を考慮した判定
-                        const nextMedTime = getNextMedicationTime(med);
-                        const registeredAt = new Date(med.createdAt);
-                        const today = new Date();
-                        
-                        // 登録日当日の場合は、登録時刻以降の服用時間のみ対象
-                        if (registeredAt.toDateString() === today.toDateString()) {
-                            // 登録時刻以降の服用時間リストに含まれている食事時間のみ対象
-                            const isInNextTimes = nextMedTime.nextTimes.some(nt => nt.mealName === meal);
-                            // さらに、登録時刻より後の服用時間のみ対象
-                            const mealTimeMinutes = time;
-                            const registeredTimeMinutes = registeredAt.getHours() * 60 + registeredAt.getMinutes();
-                            return isInNextTimes && mealTimeMinutes > registeredTimeMinutes;
-                        }
-                        
-                        return true;
-                    });
-                    overdueWarnings.push(...overdueMeds.map(med => ({...med, mealTime: meal})));
+                        overdueWarnings.push(...overdueMeds.map(med => ({
+                            ...med, 
+                            mealTime: meal,
+                            overdueDate: checkDate,
+                            dayOffset: dayOffset
+                        })));
+                    }
                 }
             }
             
@@ -1390,12 +1460,19 @@
                     const stockStatus = warning.stock <= (warning.alertThreshold || 7) ? 'low' : 'normal';
                     const stockColor = stockStatus === 'low' ? '#ff6b6b' : '#38a169';
                     
+                    // 日付表示用の文字列
+                    const dateLabel = warning.dayOffset === 0 ? '今日' : 
+                                     warning.dayOffset === 1 ? '昨日' :
+                                     `${warning.dayOffset}日前`;
+                    const warningLabel = warning.dayOffset === 0 ? '⏰ 服用時間から2時間以上経過' : 
+                                        `📅 ${dateLabel}の未服用`;
+                    
                     card.innerHTML = `
                         <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
                             <!-- 薬情報部分 -->
                             <div style="flex: 1; min-width: 0;">
                                 <div class="medication-name" style="font-size: 18px; font-weight: bold; margin-bottom: 4px;">${warning.name} - ${warning.mealTime}</div>
-                                <div class="medication-info" style="color: #ff6b6b; margin-bottom: 3px; font-weight: bold;">⏰ 服用時間から2時間以上経過</div>
+                                <div class="medication-info" style="color: #ff6b6b; margin-bottom: 3px; font-weight: bold;">${warningLabel}</div>
                                 <div class="medication-info" style="margin-bottom: 3px;">${warning.dosage} - ${warning.frequency}</div>
                                 ${warning.purpose ? `<div class="medication-info" style="color: #666; font-size: 13px;">用途: ${warning.purpose}</div>` : ''}
                             </div>
@@ -1418,11 +1495,17 @@
                         </div>
                         
                         <!-- ボタン部分 -->
-                        <button class="take-button" 
-                                onclick="showCameraModal(${warning.id}, '${warning.mealTime}')"
-                                style="background: #ff9800; width: 100%;">
-                            📸 今すぐ服用する
-                        </button>
+                        <div style="display: flex; gap: 10px;">
+                            <button class="take-button" 
+                                    onclick="showCameraModal(${warning.id}, '${warning.mealTime}', '${warning.overdueDate.toISOString()}')"
+                                    style="background: #ff9800; flex: 1;">
+                                📸 今すぐ服用する
+                            </button>
+                            <button class="skip-button" 
+                                    onclick="skipMedication(${warning.id}, '${warning.mealTime}', '${warning.overdueDate.toISOString()}')">
+                                ⏭️ 服用をスキップする
+                            </button>
+                        </div>
                     `;
                     container.appendChild(card);
                 });
@@ -1444,7 +1527,8 @@
                 // 現在の食事時間に該当するかチェック
                 const isCurrentMealTime = med.frequency === '毎食後' || 
                        med.frequency === mealTime ||
-                       (med.frequency === '朝夕食後' && (mealTime === '朝食後' || mealTime === '夕食後'));
+                       (med.frequency === '朝夕食後' && (mealTime === '朝食後' || mealTime === '夕食後')) ||
+                       (med.frequency === '毎食後＋就寝前' && (mealTime === '朝食後' || mealTime === '昼食後' || mealTime === '夕食後' || mealTime === '就寝前'));
                 
                 // 登録日当日の場合は、次回服用時間に含まれているかもチェック
                 if (isCurrentMealTime) {
@@ -1518,15 +1602,16 @@
             showCameraModal(medId, mealTime);
         }
         
-        // 今日服用済みかチェック
+        // 今日服用済みかチェック（スキップも含む）
         function isTakenToday(medId, mealTime) {
             const today = new Date().toDateString();
             return history.some(h => {
-                const takenDate = new Date(h.takenAt).toDateString();
+                const takenDate = new Date(h.date || h.takenAt).toDateString();
                 return h.medicationId === medId && 
                        takenDate === today && 
                        h.mealTime === mealTime &&
-                       !h.cancelled; // 取り消されていない履歴のみ
+                       !h.cancelled && // 取り消されていない履歴のみ
+                       (h.action === 'taken' || h.action === 'skipped' || !h.action); // taken, skipped, または古い構造（actionフィールドなし）
             });
         }
         
@@ -1681,7 +1766,7 @@
                 return;
             }
             
-            // 取り消されていない履歴のみ表示
+            // 取り消されていない履歴を表示（スキップも含む）
             const activeHistory = history.filter(h => !h.cancelled);
             
             if (activeHistory.length === 0) {
@@ -1708,23 +1793,30 @@
                         ${items.map(item => {
                             const time = new Date(item.takenAt).toLocaleTimeString('ja-JP', {hour: '2-digit', minute: '2-digit'});
                             const hasPhoto = item.photo || item.photoVerified;
+                            const isSkipped = item.action === 'skipped';
                             return `
-                                <div style="display: flex; align-items: center; margin-bottom: 10px;">
-                                    ${hasPhoto && item.photo ? `
+                                <div style="display: flex; align-items: center; margin-bottom: 10px; ${isSkipped ? 'opacity: 0.7;' : ''}">
+                                    ${!isSkipped && hasPhoto && item.photo ? `
                                         <img class="history-photo" src="${item.photo}" 
                                              onclick="showPhotoModal('${item.photo}')" 
                                              alt="服用写真">
-                                    ` : hasPhoto ? `
+                                    ` : !isSkipped && hasPhoto ? `
                                         <div class="history-photo" style="display: flex; align-items: center; justify-content: center; background: #f0f0f0;">
                                             📸
                                         </div>
+                                    ` : isSkipped ? `
+                                        <div class="history-photo" style="display: flex; align-items: center; justify-content: center; background: #f5f5f5; color: #999;">
+                                            ⏭️
+                                        </div>
                                     ` : ''}
                                     <div style="flex: 1;">
-                                        <div>${item.medicationName} (${item.mealTime})</div>
+                                        <div>${item.medicationName} (${item.mealTime})${isSkipped ? ' - スキップ' : ''}</div>
                                         <div style="font-size: 12px; color: #888;">${time}</div>
                                     </div>
-                                    <button class="cancel-button" onclick="undoHistoryItem('${item.medicationId}', '${item.takenAt}', '${item.mealTime}')" 
-                                            style="padding: 2px 8px; font-size: 12px; margin-left: 10px;">🔄 取り消し</button>
+                                    ${!isSkipped ? `
+                                        <button class="cancel-button" onclick="undoHistoryItem('${item.medicationId}', '${item.takenAt}', '${item.mealTime}')" 
+                                                style="padding: 2px 8px; font-size: 12px; margin-left: 10px;">🔄 取り消し</button>
+                                    ` : ''}
                                 </div>
                             `;
                         }).join('')}
@@ -1790,6 +1882,9 @@
                     break;
                 case '就寝前':
                     times.push('22:00');
+                    break;
+                case '毎食後＋就寝前':
+                    times.push('08:30', '12:30', '19:30', '22:00'); // 朝昼夕食後＋就寝前
                     break;
             }
             
@@ -1971,9 +2066,10 @@
         }
         
         // カメラモーダル表示
-        function showCameraModal(medId, mealTime) {
+        function showCameraModal(medId, mealTime, overdueDate = null) {
             currentMedId = medId;
             currentMealTime = mealTime;
+            currentOverdueDate = overdueDate;
             
             const modal = document.getElementById('camera-modal');
             resetCameraModal();
@@ -2274,7 +2370,9 @@
                     medicationName: med.name,
                     dosage: takingAmount + document.getElementById('confirm-dosage-unit').textContent,
                     takenAt: new Date().toISOString(),
+                    date: currentOverdueDate || new Date().toISOString(),
                     mealTime: currentMealTime,
+                    action: 'taken',
                     photoVerified: true,
                     photo: tempImage
                 };
@@ -2306,6 +2404,46 @@
                 showPage('history');
                 updateHistoryList();
             }
+        }
+        
+        // 薬をスキップする関数
+        function skipMedication(medId, mealTime, overdueDate) {
+            const med = medications.find(m => m.id === medId);
+            if (!med) return;
+            
+            if (!confirm(`${med.name} - ${mealTime}をスキップしますか？\n在庫は減らず、警告も消えます。`)) {
+                return;
+            }
+            
+            // スキップ履歴を追加（在庫は減らさない）
+            const historyItem = {
+                medicationId: medId,
+                medicationName: med.name,
+                dosage: med.dosage || '1錠',
+                takenAt: new Date().toISOString(),
+                date: overdueDate || new Date().toISOString(),
+                mealTime: mealTime,
+                action: 'skipped',
+                photoVerified: false,
+                photo: null
+            };
+            
+            history.push(historyItem);
+            localStorage.setItem('history', JSON.stringify(history));
+            
+            // アナリティクス: スキップ記録追跡
+            if (analyticsManager) {
+                analyticsManager.trackEvent('medication_skipped', {
+                    medication_id: medId,
+                    medication_name: med.name,
+                    meal_time: mealTime
+                });
+            }
+            
+            // UIを更新（警告が消える）
+            updateTodayMedications();
+            
+            alert(`✅ ${med.name} - ${mealTime}をスキップしました。`);
         }
         
         // 履歴ビュー切り替え
