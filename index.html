@@ -180,6 +180,104 @@
             z-index: 1000;
         }
         
+        .history-matrix {
+            overflow-x: auto;
+            margin: 20px 0;
+        }
+        
+        .matrix-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .matrix-table th,
+        .matrix-table td {
+            border: 1px solid #e2e8f0;
+            padding: 6px;
+            text-align: center;
+        }
+        
+        .matrix-table th {
+            background: #f8fafc;
+            font-weight: bold;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        .matrix-table th:first-child {
+            position: sticky;
+            left: 0;
+            background: #f1f5f9;
+            z-index: 11;
+        }
+        
+        .matrix-table td:first-child {
+            position: sticky;
+            left: 0;
+            background: #f8fafc;
+            font-weight: bold;
+            text-align: left;
+            font-size: 11px;
+        }
+        
+        .matrix-taken {
+            color: #22c55e;
+            font-size: 16px;
+        }
+        
+        .matrix-skipped {
+            color: #ef4444;
+            font-weight: bold;
+            font-size: 10px;
+        }
+        
+        .matrix-missed {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+        
+        .medication-adherence {
+            margin: 10px 0;
+            padding: 10px;
+            background: #f8fafc;
+            border-radius: 6px;
+        }
+        
+        .adherence-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 5px 0;
+            font-size: 14px;
+        }
+        
+        .adherence-rate {
+            font-weight: bold;
+            padding: 2px 8px;
+            border-radius: 12px;
+        }
+        
+        .rate-good {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+        
+        .rate-fair {
+            background: #fef3c7;
+            color: #d97706;
+        }
+        
+        .rate-poor {
+            background: #fecaca;
+            color: #dc2626;
+        }
+        
         .modal {
             display: none;
             position: fixed;
@@ -642,10 +740,12 @@
         <div id="history-page" class="page">
             <h2>服薬履歴</h2>
             <div style="margin-bottom: 20px;">
-                <button onclick="showHistoryView('list')" id="list-view-btn" style="padding: 8px 15px; margin-right: 10px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;">📋 リスト表示</button>
+                <button onclick="showHistoryView('matrix')" id="matrix-view-btn" style="padding: 8px 15px; margin-right: 10px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;">📈 マトリクス表示</button>
+                <button onclick="showHistoryView('list')" id="list-view-btn" style="padding: 8px 15px; margin-right: 10px; background: #ddd; color: #666; border: none; border-radius: 5px; cursor: pointer;">📋 リスト表示</button>
                 <button onclick="showHistoryView('gallery')" id="gallery-view-btn" style="padding: 8px 15px; background: #ddd; color: #666; border: none; border-radius: 5px; cursor: pointer;">🖼️ 写真一覧</button>
             </div>
-            <div id="history-list"></div>
+            <div id="history-matrix"></div>
+            <div id="history-list" style="display: none;"></div>
             <div id="history-gallery" style="display: none;"></div>
         </div>
         
@@ -677,6 +777,21 @@
             </div>
             
             
+            <!-- リセット機能 -->
+            <div class="medication-card">
+                <h3>🗑️ データリセット</h3>
+                <p style="color: #666; margin-bottom: 15px;">すべての薬箱データと服薬履歴を削除し、アプリを初期化します</p>
+                <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
+                    <strong>⚠️ 注意:</strong>
+                    <ul style="margin: 5px 0; padding-left: 20px; font-size: 14px;">
+                        <li>すべての薬の情報が削除されます</li>
+                        <li>すべての服薬履歴が削除されます</li>
+                        <li>この操作は元に戻すことができません</li>
+                    </ul>
+                </div>
+                <button onclick="resetAllData()" style="background: #dc3545; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; width: 100%; font-weight: bold;">🗑️ すべてのデータをリセット</button>
+            </div>
+            
             <!-- アプリ情報 -->
             <div class="medication-card">
                 <h3>ℹ️ アプリ情報</h3>
@@ -693,41 +808,7 @@
                 </div>
             </div>
             
-            <!-- クラウド同期セクション -->
-            <div class="medication-card">
-                <h3>☁️ クラウド同期</h3>
-                <p style="color: #666; margin-bottom: 15px;">データをクラウドに保存して端末間で同期できます</p>
-                <div style="margin-bottom: 15px;">
-                    <div style="font-size: 14px; color: #666;">
-                        最後の同期: <span id="last-sync-time">未同期</span>
-                    </div>
-                    <div style="font-size: 14px; color: #666;">
-                        オンライン状態: <span id="online-status">オフライン</span>
-                    </div>
-                </div>
-                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                    <button onclick="manualSync()" style="background: #4CAF50; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; flex: 1;">手動同期</button>
-                    <button onclick="migrateData()" style="background: #2196F3; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; flex: 1;">データ移行</button>
-                </div>
-                <div style="margin-top: 10px; font-size: 12px; color: #999;">
-                    ※ログイン後、データが自動的にクラウドに同期されます
-                </div>
-            </div>
             
-            <!-- OAuth認証状況 -->
-            <div class="medication-card">
-                <h3>🔐 OAuth認証ステータス</h3>
-                <div style="background: #d4edda; border: 1px solid #c3e6cb; padding: 10px; border-radius: 5px; margin-bottom: 10px;">
-                    <strong>認証サービス状況:</strong>
-                    <ul style="margin: 5px 0; padding-left: 20px; font-size: 14px;">
-                        <li id="google-oauth-status">🔍 Firebase Google OAuth: <span style="color: #6c757d;">読み込み中...</span></li>
-                        <li id="apple-oauth-status">🍎 Apple Sign In: <span style="color: #ffc107;">読み込み中...</span></li>
-                    </ul>
-                </div>
-                <div style="font-size: 12px; color: #666;">
-                    <strong>Firebase SDK使用:</strong> Firebase Console の承認済みドメイン設定のみで動作します。
-                </div>
-            </div>
             
             <!-- 法的文書セクション -->
             <div class="medication-card">
@@ -1011,7 +1092,7 @@
             } else if (pageName === 'medications') {
                 updateMedicationsList();
             } else if (pageName === 'history') {
-                updateHistoryList();
+                showHistoryView('matrix');
             } else if (pageName === 'settings') {
                 loadMealTimeSettings();
             }
@@ -1436,7 +1517,20 @@
                             return true;
                         });
                         
-                        overdueWarnings.push(...overdueMeds.map(med => ({
+                        // 既に服用済みやスキップ済みのものは除外
+                        const filteredOverdueMeds = overdueMeds.filter(med => {
+                            const medicationHistory = JSON.parse(localStorage.getItem('history') || '[]');
+                            const isTakenOnDate = medicationHistory.some(h => 
+                                h.medicationId == med.id &&
+                                h.mealTime === meal && 
+                                new Date(h.date || h.takenAt).toDateString() === checkDateStr &&
+                                !h.cancelled &&
+                                (h.action === 'taken' || h.action === 'skipped' || !h.action)
+                            );
+                            return !isTakenOnDate;
+                        });
+                        
+                        overdueWarnings.push(...filteredOverdueMeds.map(med => ({
                             ...med, 
                             mealTime: meal,
                             overdueDate: checkDate,
@@ -1515,8 +1609,14 @@
                 checkOverdueNotifications(overdueWarnings);
             }
             
-            // 現在の服用時間の薬を表示（登録日時を考慮）
+            // 現在の服用時間の薬を表示（登録日時を考慮、服用済みは除外）
             const todayMeds = medications.filter(med => {
+                // 既に服用済みまたはスキップ済みのものは除外
+                const taken = isTakenToday(med.id, mealTime);
+                if (taken) {
+                    return false;
+                }
+                
                 // 薬の次回服用タイミングを取得
                 const nextMedTime = getNextMedicationTime(med);
                 
@@ -1863,45 +1963,67 @@
         // 服薬リマインダーの設定
         function setMedicationReminders(medication) {
             const frequency = medication.frequency;
-            const times = [];
+            const mealTimes = [];
+            
+            // 時間設定を取得
+            const saved = localStorage.getItem('mealTimeSettings');
+            let settings = {
+                breakfast: '09:00',
+                lunch: '13:00',
+                dinner: '19:00',
+                bedtime: '22:00'
+            };
+            if (saved) {
+                settings = JSON.parse(saved);
+            }
             
             // 服用頻度に応じて通知時間を設定
             switch(frequency) {
                 case '毎食後':
-                    times.push('08:30', '12:30', '19:30'); // 朝昼夕食後
+                    mealTimes.push({time: settings.breakfast, meal: '朝食後'});
+                    mealTimes.push({time: settings.lunch, meal: '昼食後'});
+                    mealTimes.push({time: settings.dinner, meal: '夕食後'});
                     break;
                 case '朝食後':
-                    times.push('08:30');
+                    mealTimes.push({time: settings.breakfast, meal: '朝食後'});
                     break;
                 case '昼食後':
-                    times.push('12:30');
+                    mealTimes.push({time: settings.lunch, meal: '昼食後'});
                     break;
                 case '夕食後':
-                    times.push('19:30');
+                    mealTimes.push({time: settings.dinner, meal: '夕食後'});
                     break;
                 case '朝夕食後':
-                    times.push('08:30', '19:30');
+                    mealTimes.push({time: settings.breakfast, meal: '朝食後'});
+                    mealTimes.push({time: settings.dinner, meal: '夕食後'});
                     break;
                 case '就寝前':
-                    times.push('22:00');
+                    mealTimes.push({time: settings.bedtime, meal: '就寝前'});
                     break;
                 case '毎食後＋就寝前':
-                    times.push('08:30', '12:30', '19:30', '22:00'); // 朝昼夕食後＋就寝前
+                    mealTimes.push({time: settings.breakfast, meal: '朝食後'});
+                    mealTimes.push({time: settings.lunch, meal: '昼食後'});
+                    mealTimes.push({time: settings.dinner, meal: '夕食後'});
+                    mealTimes.push({time: settings.bedtime, meal: '就寝前'});
                     break;
             }
             
-            // 各時間に対して通知を設定
-            times.forEach(time => {
-                scheduleNotificationAtTime(medication, time);
+            // 各時間に対して通知を設定（30分前と30分後）
+            mealTimes.forEach(mealTime => {
+                // 30分前の通知
+                scheduleNotificationBeforeTime(medication, mealTime.time, mealTime.meal);
+                // 30分後のアラート
+                scheduleNotificationAfterTime(medication, mealTime.time, mealTime.meal);
             });
         }
         
-        // 指定時間に通知を設定
-        function scheduleNotificationAtTime(medication, timeString) {
+        // 服用時間30分前の通知を設定
+        function scheduleNotificationBeforeTime(medication, timeString, mealTime) {
             const [hours, minutes] = timeString.split(':').map(Number);
             const now = new Date();
             const scheduledTime = new Date();
-            scheduledTime.setHours(hours, minutes, 0, 0);
+            // 30分前に設定
+            scheduledTime.setHours(hours, minutes - 30, 0, 0);
             
             // もし今日の時間が過ぎていたら明日に設定
             if (scheduledTime <= now) {
@@ -1911,46 +2033,79 @@
             const timeUntilNotification = scheduledTime.getTime() - now.getTime();
             
             setTimeout(() => {
-                showMedicationNotification(medication, timeString);
+                // 既に服用済みかチェック
+                if (!isTakenToday(medication.id, mealTime)) {
+                    showMedicationReminderNotification(medication, mealTime);
+                }
                 // 翌日以降も継続するため再スケジュール
                 setTimeout(() => {
-                    scheduleNotificationAtTime(medication, timeString);
+                    scheduleNotificationBeforeTime(medication, timeString, mealTime);
                 }, 24 * 60 * 60 * 1000); // 24時間後
             }, timeUntilNotification);
         }
         
-        // 薬の通知を表示
-        function showMedicationNotification(medication, time) {
+        // 服用時間30分後のアラート通知を設定
+        function scheduleNotificationAfterTime(medication, timeString, mealTime) {
+            const [hours, minutes] = timeString.split(':').map(Number);
+            const now = new Date();
+            const scheduledTime = new Date();
+            // 30分後に設定
+            scheduledTime.setHours(hours, minutes + 30, 0, 0);
+            
+            // もし今日の時間が過ぎていたら明日に設定
+            if (scheduledTime <= now) {
+                scheduledTime.setDate(scheduledTime.getDate() + 1);
+            }
+            
+            const timeUntilNotification = scheduledTime.getTime() - now.getTime();
+            
+            setTimeout(() => {
+                // 既に服用済みかチェック
+                if (!isTakenToday(medication.id, mealTime)) {
+                    showOverdueAlertNotification(medication, mealTime);
+                }
+                // 翌日以降も継続するため再スケジュール
+                setTimeout(() => {
+                    scheduleNotificationAfterTime(medication, timeString, mealTime);
+                }, 24 * 60 * 60 * 1000); // 24時間後
+            }, timeUntilNotification);
+        }
+        
+        // 服用30分前のリマインダー通知を表示
+        function showMedicationReminderNotification(medication, mealTime) {
             if ('Notification' in window && Notification.permission === 'granted') {
-                const notification = new Notification(`💊 お薬の時間です`, {
-                    body: `${medication.name} (${medication.dosage}) を服用してください`,
+                const notification = new Notification(`💊 もうすぐお薬の時間です`, {
+                    body: `あと30分で${medication.name} (${medication.dosage}) - ${mealTime}の服用時間です`,
                     icon: '💊',
                     badge: '💊',
-                    tag: `medication-${medication.id}`,
-                    requireInteraction: true,
-                    actions: [
-                        {
-                            action: 'take',
-                            title: '服用済み'
-                        },
-                        {
-                            action: 'later',
-                            title: '後で'
-                        }
-                    ]
+                    tag: `reminder-${medication.id}-${mealTime}`,
+                    requireInteraction: true
                 });
                 
                 notification.onclick = function() {
                     window.focus();
-                    // ホーム画面を表示
                     showPage('home');
                     this.close();
                 };
+            }
+        }
+        
+        // 服用時間30分後のアラート通知を表示
+        function showOverdueAlertNotification(medication, mealTime) {
+            if ('Notification' in window && Notification.permission === 'granted') {
+                const notification = new Notification(`⚠️ 服用時間を過ぎています`, {
+                    body: `${medication.name} (${medication.dosage}) - ${mealTime}の服用時間を30分過ぎました。今すぐ服用してください。`,
+                    icon: '⚠️',
+                    badge: '⚠️',
+                    tag: `overdue-${medication.id}-${mealTime}`,
+                    requireInteraction: true
+                });
                 
-                // 10秒後に自動で閉じる
-                setTimeout(() => {
-                    notification.close();
-                }, 10000);
+                notification.onclick = function() {
+                    window.focus();
+                    showPage('home');
+                    this.close();
+                };
             }
         }
         
@@ -2453,28 +2608,179 @@
         
         // 履歴ビュー切り替え
         function showHistoryView(viewType) {
+            const matrixView = document.getElementById('history-matrix');
             const listView = document.getElementById('history-list');
             const galleryView = document.getElementById('history-gallery');
+            const matrixBtn = document.getElementById('matrix-view-btn');
             const listBtn = document.getElementById('list-view-btn');
             const galleryBtn = document.getElementById('gallery-view-btn');
             
-            if (viewType === 'list') {
+            // すべてを非表示
+            matrixView.style.display = 'none';
+            listView.style.display = 'none';
+            galleryView.style.display = 'none';
+            
+            // すべてのボタンをリセット
+            [matrixBtn, listBtn, galleryBtn].forEach(btn => {
+                btn.style.background = '#e2e8f0';
+                btn.style.color = '#4a5568';
+            });
+            
+            if (viewType === 'matrix') {
+                matrixView.style.display = 'block';
+                matrixBtn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                matrixBtn.style.color = 'white';
+                updateHistoryMatrix();
+            } else if (viewType === 'list') {
                 listView.style.display = 'block';
-                galleryView.style.display = 'none';
                 listBtn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
                 listBtn.style.color = 'white';
-                galleryBtn.style.background = '#e2e8f0';
-                galleryBtn.style.color = '#4a5568';
                 updateHistoryList();
             } else {
-                listView.style.display = 'none';
                 galleryView.style.display = 'block';
-                listBtn.style.background = '#e2e8f0';
-                listBtn.style.color = '#4a5568';
                 galleryBtn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
                 galleryBtn.style.color = 'white';
                 updateHistoryGallery();
             }
+        }
+        
+        // マトリクス表示の更新
+        function updateHistoryMatrix() {
+            const container = document.getElementById('history-matrix');
+            
+            if (medications.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #666;">薬が登録されていません</p>';
+                return;
+            }
+            
+            // 過去2か月分のデータを取得
+            const now = new Date();
+            const twoMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 2, now.getDate());
+            
+            // 日付のリストを作成（過去2か月）
+            const dates = [];
+            for (let d = new Date(twoMonthsAgo); d <= now; d.setDate(d.getDate() + 1)) {
+                dates.push(new Date(d));
+            }
+            dates.reverse(); // 新しい日付から表示
+            
+            // 各薬の服用率を計算
+            const adherenceRates = medications.map(med => {
+                const totalExpected = calculateExpectedDoses(med, twoMonthsAgo, now);
+                const totalTaken = history.filter(h => 
+                    !h.cancelled && 
+                    h.medicationId == med.id && 
+                    h.action === 'taken' &&
+                    new Date(h.date || h.takenAt) >= twoMonthsAgo
+                ).length;
+                
+                const rate = totalExpected > 0 ? (totalTaken / totalExpected * 100) : 0;
+                return { med, rate: Math.round(rate), totalTaken, totalExpected };
+            });
+            
+            // マトリクステーブルを作成
+            let matrixHTML = '<div class="history-matrix">';
+            
+            // 服用率セクション
+            matrixHTML += '<div class="medication-adherence">';
+            matrixHTML += '<h3 style="margin-bottom: 10px; font-size: 16px;">📊 各薬の服用率（過去2か月）</h3>';
+            adherenceRates.forEach(item => {
+                const rateClass = item.rate >= 80 ? 'rate-good' : item.rate >= 60 ? 'rate-fair' : 'rate-poor';
+                matrixHTML += `
+                    <div class="adherence-item">
+                        <span>${item.med.name}</span>
+                        <span class="adherence-rate ${rateClass}">${item.rate}% (${item.totalTaken}/${item.totalExpected})</span>
+                    </div>
+                `;
+            });
+            matrixHTML += '</div>';
+            
+            // テーブルヘッダー
+            matrixHTML += '<table class="matrix-table">';
+            matrixHTML += '<thead><tr><th>日付</th>';
+            medications.forEach(med => {
+                matrixHTML += `<th style="min-width: 60px;">${med.name}</th>`;
+            });
+            matrixHTML += '</tr></thead><tbody>';
+            
+            // 各日付のデータ
+            dates.forEach(date => {
+                const dateStr = date.toLocaleDateString('ja-JP', {month: 'numeric', day: 'numeric'});
+                const dayStr = date.toLocaleDateString('ja-JP', {weekday: 'short'});
+                matrixHTML += `<tr><td style="font-size: 10px;">${dateStr}<br>${dayStr}</td>`;
+                
+                medications.forEach(med => {
+                    const mealTimes = getMealTimesForMedication(med.frequency);
+                    let cellContent = '';
+                    
+                    mealTimes.forEach(mealTime => {
+                        const historyItem = history.find(h => 
+                            !h.cancelled &&
+                            h.medicationId == med.id &&
+                            h.mealTime === mealTime &&
+                            new Date(h.date || h.takenAt).toDateString() === date.toDateString()
+                        );
+                        
+                        if (historyItem) {
+                            if (historyItem.action === 'skipped') {
+                                cellContent += '<div class="matrix-skipped">skip</div>';
+                            } else {
+                                cellContent += '<div class="matrix-taken">✓</div>';
+                            }
+                        } else {
+                            // 未服用で、薬の登録日以降の場合は空欄で表示
+                            const medCreatedAt = new Date(med.createdAt || date);
+                            if (date >= medCreatedAt && date < now) {
+                                cellContent += '<div>-</div>';
+                            }
+                        }
+                    });
+                    
+                    matrixHTML += `<td>${cellContent}</td>`;
+                });
+                
+                matrixHTML += '</tr>';
+            });
+            
+            matrixHTML += '</tbody></table></div>';
+            
+            container.innerHTML = matrixHTML;
+        }
+        
+        // 薬の服用頻度から食事時間リストを取得
+        function getMealTimesForMedication(frequency) {
+            switch(frequency) {
+                case '毎食後':
+                    return ['朝食後', '昼食後', '夕食後'];
+                case '朝食後':
+                    return ['朝食後'];
+                case '昼食後':
+                    return ['昼食後'];
+                case '夕食後':
+                    return ['夕食後'];
+                case '朝夕食後':
+                    return ['朝食後', '夕食後'];
+                case '就寝前':
+                    return ['就寝前'];
+                case '毎食後＋就寝前':
+                    return ['朝食後', '昼食後', '夕食後', '就寝前'];
+                default:
+                    return [];
+            }
+        }
+        
+        // 期間2か月で期待される服用回数を計算
+        function calculateExpectedDoses(medication, startDate, endDate) {
+            const mealTimes = getMealTimesForMedication(medication.frequency);
+            const medCreatedAt = new Date(medication.createdAt || startDate);
+            const actualStartDate = medCreatedAt > startDate ? medCreatedAt : startDate;
+            
+            let totalDays = 0;
+            for (let d = new Date(actualStartDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+                totalDays++;
+            }
+            
+            return totalDays * mealTimes.length;
         }
         
         // 写真ギャラリーの更新
@@ -2596,7 +2902,63 @@
             }
         }
         
-        
+        // すべてのデータをリセット
+        function resetAllData() {
+            const confirmMessage = `すべてのデータをリセットしますか？
+
+削除されるデータ:
+- すべての薬の情報
+- すべての服薬履歴
+- 時間設定を除くすべての設定
+
+この操作は元に戻すことができません。`;
+            
+            if (!confirm(confirmMessage)) {
+                return;
+            }
+            
+            // 2回目の確認
+            if (!confirm('本当に実行しますか？この操作は取り消せません。')) {
+                return;
+            }
+            
+            try {
+                // ローカルストレージからデータを削除（時間設定以外）
+                const keysToRemove = [
+                    'medications',
+                    'history',
+                    'medicationHistory',
+                    'userSettings',
+                    'lastSyncTime',
+                    'registeredUsers',
+                    'isLoggedIn',
+                    'currentUser'
+                ];
+                
+                keysToRemove.forEach(key => {
+                    localStorage.removeItem(key);
+                });
+                
+                // メモリ内のデータもリセット
+                medications = [];
+                history = [];
+                
+                // UIを更新
+                updateTodayMedications();
+                updateMedicationsList();
+                showHistoryView('matrix'); // 履歴も更新
+                checkStockWarnings();
+                
+                alert('✅ すべてのデータがリセットされました。アプリを新しく使い始めることができます。');
+                
+                // ホームページに移動
+                showPage('home');
+                
+            } catch (error) {
+                console.error('リセットエラー:', error);
+                alert('リセット中にエラーが発生しました。ページを更新してください。');
+            }
+        }
         
         // 定期的に画面を更新（1分ごと）
         setInterval(() => {
